@@ -458,6 +458,325 @@ _SKILLS: list[SkillDefinition] = [
         tags=["pr", "review", "conventional-commits", "multi-agent", "diff"],
         created_at=_EPOCH,
     ),
+    # ── Superpowers skills (obra/superpowers) ─────────────────────────────────
+    SkillDefinition(
+        id="skill-superpowers-brainstorming",
+        name="Brainstorming (Superpowers)",
+        description=(
+            "Socratic design refinement skill from obra/superpowers. Activates before any "
+            "creative or implementation work. Explores user intent through targeted questions, "
+            "proposes 2-3 approaches with trade-offs, presents the design in sections for "
+            "validation, writes a spec document, runs a spec-review loop, then transitions "
+            "to writing-plans. Hard-gates implementation until the human approves the design."
+        ),
+        category="collaboration",
+        auto_invoke_pattern=r"(brainstorm|design|spec|plan|before.?cod|feature|build|create|implement)",
+        compatible_agents=["agent-001", "agent-002", "agent-005", "agent-007"],
+        prompt_template=(
+            "You are using the superpowers:brainstorming skill.\n\n"
+            "HARD GATE: Do NOT write any code or invoke any implementation skill until you have:\n"
+            "1. Explored the project context (files, docs, recent commits)\n"
+            "2. Asked clarifying questions ONE AT A TIME to understand purpose/constraints/success criteria\n"
+            "3. Proposed 2-3 approaches with trade-offs and your recommendation\n"
+            "4. Presented the design in sections and received user approval for each section\n"
+            "5. Written the design doc to docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md\n"
+            "6. Run a spec-document-reviewer subagent loop (max 5 iterations) until approved\n"
+            "7. Asked the user to review the written spec before proceeding\n\n"
+            "Only after ALL of the above: invoke the writing-plans skill."
+        ),
+        source_repo="obra/superpowers",
+        installs=9820,
+        tags=["brainstorming", "design", "spec", "socratic", "superpowers", "pre-code"],
+        created_at=_EPOCH,
+    ),
+    SkillDefinition(
+        id="skill-superpowers-tdd",
+        name="Test-Driven Development (Superpowers)",
+        description=(
+            "Strict RED-GREEN-REFACTOR TDD skill from obra/superpowers. Enforces the iron law: "
+            "NO production code without a failing test first. If you wrote code before the test, "
+            "delete it and start over. Watch every test fail before writing code, watch it pass "
+            "after. Tests after implementation prove nothing — tests must fail first."
+        ),
+        category="testing",
+        auto_invoke_pattern=r"(tdd|test.driven|implement|feature|bugfix|refactor)",
+        compatible_agents=["agent-003", "agent-006", "agent-009", "agent-010"],
+        prompt_template=(
+            "You are using the superpowers:test-driven-development skill.\n\n"
+            "IRON LAW: NO PRODUCTION CODE WITHOUT A FAILING TEST FIRST.\n\n"
+            "The RED-GREEN-REFACTOR cycle:\n"
+            "RED:      Write one minimal failing test that describes the desired behavior.\n"
+            "          Run it. Verify it FAILS with the expected failure message.\n"
+            "          If it passes immediately, your test is wrong — fix it.\n"
+            "GREEN:    Write the SIMPLEST possible code to make ONLY this test pass.\n"
+            "          No extra features, no refactoring, no YAGNI violations.\n"
+            "          Run tests. Confirm ALL pass.\n"
+            "REFACTOR: Clean up duplication, naming, structure. Stay green throughout.\n\n"
+            "If you catch yourself writing code before the test: DELETE the code. Start over.\n"
+            "Commit after each green cycle with a message like 'feat: add X (TDD)'."
+        ),
+        source_repo="obra/superpowers",
+        installs=14330,
+        tags=["tdd", "testing", "red-green-refactor", "superpowers", "quality"],
+        created_at=_EPOCH,
+    ),
+    SkillDefinition(
+        id="skill-superpowers-debugging",
+        name="Systematic Debugging (Superpowers)",
+        description=(
+            "Four-phase root-cause debugging methodology from obra/superpowers. Forbids random "
+            "fixes before root cause is found. Phase 1: gather evidence (read errors carefully, "
+            "reproduce consistently, check recent changes, add diagnostic instrumentation). "
+            "Phase 2: pattern analysis (find working examples, compare differences). Phase 3: "
+            "single hypothesis + minimal test. Phase 4: fix root cause, create failing test, "
+            "verify fix. After 3+ failed fixes: question the architecture."
+        ),
+        category="debugging",
+        auto_invoke_pattern=r"(debug|bug|error|fail|broken|crash|unexpected|investigate)",
+        compatible_agents=["agent-003", "agent-002", "agent-007"],
+        prompt_template=(
+            "You are using the superpowers:systematic-debugging skill.\n\n"
+            "IRON LAW: NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.\n\n"
+            "PHASE 1 — Root Cause Investigation:\n"
+            "  a) Read all error messages completely (stack traces, line numbers, codes)\n"
+            "  b) Reproduce the issue consistently — if you can't, gather more data\n"
+            "  c) Check recent changes (git diff, recent commits, new dependencies)\n"
+            "  d) In multi-component systems: add diagnostic logging at each boundary\n"
+            "     Run once to gather evidence, then analyze WHERE it breaks\n"
+            "  e) Trace data flow backward from symptom to source\n\n"
+            "PHASE 2 — Pattern Analysis:\n"
+            "  Find similar working code, compare against broken code, list ALL differences\n\n"
+            "PHASE 3 — Hypothesis Testing:\n"
+            "  State one specific hypothesis. Make the SMALLEST possible change to test it.\n"
+            "  One variable at a time. If wrong, form a NEW hypothesis — don't stack fixes.\n\n"
+            "PHASE 4 — Implementation:\n"
+            "  Create a failing test case. Apply the single root-cause fix. Verify.\n"
+            "  If 3+ fixes have failed: STOP and question the architecture.\n\n"
+            "RED FLAGS (STOP if you think these): 'quick fix for now', 'just try X',\n"
+            "'I'll investigate later', 'add multiple changes and see'."
+        ),
+        source_repo="obra/superpowers",
+        installs=11240,
+        tags=["debugging", "root-cause", "systematic", "superpowers", "four-phase"],
+        created_at=_EPOCH,
+    ),
+    SkillDefinition(
+        id="skill-superpowers-writing-plans",
+        name="Writing Plans (Superpowers)",
+        description=(
+            "Comprehensive implementation plan writing skill from obra/superpowers. Produces "
+            "bite-sized task plans (2-5 min each) with exact file paths, complete code, and "
+            "verification steps. Each task follows TDD: write failing test, run it, implement "
+            "minimal code, run tests, commit. Plans saved to "
+            "docs/superpowers/plans/YYYY-MM-DD-<feature>.md. Runs a plan-document-reviewer "
+            "subagent loop after each chunk. Hands off to subagent-driven-development."
+        ),
+        category="collaboration",
+        auto_invoke_pattern=r"(plan|task.?list|implementation.?plan|sprint|roadmap)",
+        compatible_agents=["agent-001", "agent-004", "agent-007", "agent-008"],
+        prompt_template=(
+            "You are using the superpowers:writing-plans skill.\n\n"
+            "Announce: 'I'm using the writing-plans skill to create the implementation plan.'\n\n"
+            "EVERY plan MUST start with this header:\n"
+            "  # [Feature Name] Implementation Plan\n"
+            "  > **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development\n"
+            "  **Goal:** [One sentence]\n"
+            "  **Architecture:** [2-3 sentences]\n"
+            "  **Tech Stack:** [Key technologies]\n\n"
+            "TASK STRUCTURE (each task = 2-5 minutes):\n"
+            "  - [ ] Write the failing test (with exact code)\n"
+            "  - [ ] Run test to verify it FAILS\n"
+            "  - [ ] Write minimal implementation (with exact code)\n"
+            "  - [ ] Run tests to verify they PASS\n"
+            "  - [ ] Commit (with exact git command)\n\n"
+            "File mapping: list every file to create or modify with exact paths before tasks.\n"
+            "After each chunk: dispatch plan-document-reviewer subagent until approved.\n"
+            "Save plan to: docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md\n"
+            "Final: hand off to superpowers:subagent-driven-development."
+        ),
+        source_repo="obra/superpowers",
+        installs=8760,
+        tags=["planning", "tasks", "implementation", "superpowers", "bite-sized"],
+        created_at=_EPOCH,
+    ),
+    SkillDefinition(
+        id="skill-superpowers-subagent-dev",
+        name="Subagent-Driven Development (Superpowers)",
+        description=(
+            "Execute implementation plans by dispatching a fresh subagent per task with "
+            "two-stage review (spec compliance, then code quality) from obra/superpowers. "
+            "Fresh subagent per task means no context pollution. Each subagent implements, "
+            "tests, commits, and self-reviews. Spec-reviewer and code-quality-reviewer "
+            "subagents gate progression. Uses cheapest capable model per task type."
+        ),
+        category="collaboration",
+        auto_invoke_pattern=r"(execute.?plan|subagent|parallel.?agent|dispatch|implement.?plan)",
+        compatible_agents=["agent-001", "agent-002", "agent-007", "agent-009"],
+        prompt_template=(
+            "You are using the superpowers:subagent-driven-development skill.\n\n"
+            "PROCESS per task:\n"
+            "1. Read plan; extract ALL tasks with full text; create TodoWrite\n"
+            "2. For each task:\n"
+            "   a) Dispatch implementer subagent with full task text + context (NOT session history)\n"
+            "   b) Handle status: DONE→review, DONE_WITH_CONCERNS→read then review,\n"
+            "      NEEDS_CONTEXT→provide and re-dispatch, BLOCKED→assess and escalate\n"
+            "   c) Dispatch spec-compliance-reviewer subagent\n"
+            "   d) If issues: implementer fixes → re-review\n"
+            "   e) Dispatch code-quality-reviewer subagent\n"
+            "   f) If issues: implementer fixes → re-review\n"
+            "   g) Mark task complete in TodoWrite\n"
+            "3. After all tasks: dispatch final code reviewer for entire implementation\n"
+            "4. Invoke superpowers:finishing-a-development-branch\n\n"
+            "MODEL SELECTION: cheap model for mechanical tasks (1-2 files, clear spec),\n"
+            "standard for integration, most capable for architecture/review."
+        ),
+        source_repo="obra/superpowers",
+        installs=7530,
+        tags=["subagents", "parallel", "review", "superpowers", "two-stage-review"],
+        created_at=_EPOCH,
+    ),
+    SkillDefinition(
+        id="skill-superpowers-code-review",
+        name="Requesting Code Review (Superpowers)",
+        description=(
+            "Pre-review checklist skill from obra/superpowers. Dispatches a code-reviewer "
+            "subagent with precisely crafted context (never session history) to catch issues "
+            "before they cascade. Mandatory after each task in subagent-driven development, "
+            "after completing major features, and before merging. Issues classified as "
+            "Critical (fix immediately), Important (fix before proceeding), or Minor (note)."
+        ),
+        category="review",
+        auto_invoke_pattern=r"(code.?review|pr.?review|before.?merge|request.?review)",
+        compatible_agents=["agent-002", "agent-007", "agent-011"],
+        prompt_template=(
+            "You are using the superpowers:requesting-code-review skill.\n\n"
+            "HOW TO REQUEST REVIEW:\n"
+            "1. Get git SHAs:\n"
+            "   BASE_SHA=$(git rev-parse HEAD~1)  # or origin/main\n"
+            "   HEAD_SHA=$(git rev-parse HEAD)\n"
+            "2. Dispatch code-reviewer subagent with:\n"
+            "   - WHAT_WAS_IMPLEMENTED: what you just built\n"
+            "   - PLAN_OR_REQUIREMENTS: what it should do\n"
+            "   - BASE_SHA / HEAD_SHA\n"
+            "   - DESCRIPTION: brief 1-2 sentence summary\n"
+            "3. Act on feedback:\n"
+            "   Critical issues: fix immediately before ANY other work\n"
+            "   Important issues: fix before proceeding to next task\n"
+            "   Minor issues: note for later\n\n"
+            "NEVER: skip review because 'it's simple', ignore Critical issues,\n"
+            "proceed with unfixed Important issues."
+        ),
+        source_repo="obra/superpowers",
+        installs=6890,
+        tags=["review", "pre-merge", "code-quality", "superpowers", "subagent"],
+        created_at=_EPOCH,
+    ),
+    SkillDefinition(
+        id="skill-superpowers-finish-branch",
+        name="Finishing a Development Branch (Superpowers)",
+        description=(
+            "Branch completion workflow from obra/superpowers. Verifies tests pass, determines "
+            "base branch, then presents exactly 4 options: merge locally, push & create PR, "
+            "keep as-is, or discard. Handles worktree cleanup for the chosen path. Requires "
+            "typed 'discard' confirmation before deleting work. Called after all plan tasks "
+            "complete in subagent-driven-development."
+        ),
+        category="collaboration",
+        auto_invoke_pattern=r"(finish.?branch|merge|create.?pr|complete.?feature|done.?implement)",
+        compatible_agents=["agent-001", "agent-007", "agent-008"],
+        prompt_template=(
+            "You are using the superpowers:finishing-a-development-branch skill.\n\n"
+            "Announce: 'I'm using the finishing-a-development-branch skill to complete this work.'\n\n"
+            "STEP 1 — Verify tests pass:\n"
+            "  Run project test suite. If ANY fail: show failures, STOP, do not proceed.\n\n"
+            "STEP 2 — Determine base branch:\n"
+            "  git merge-base HEAD main 2>/dev/null || git merge-base HEAD master\n\n"
+            "STEP 3 — Present EXACTLY these 4 options (no additions, no explanations):\n"
+            "  1. Merge back to <base-branch> locally\n"
+            "  2. Push and create a Pull Request\n"
+            "  3. Keep the branch as-is (I'll handle it later)\n"
+            "  4. Discard this work\n\n"
+            "STEP 4 — Execute the chosen option (see skill docs for full flow).\n"
+            "STEP 5 — Clean up worktree for Options 1 and 4 only.\n\n"
+            "NEVER merge with failing tests. NEVER delete without typed 'discard' confirmation."
+        ),
+        source_repo="obra/superpowers",
+        installs=5420,
+        tags=["branch", "merge", "pr", "cleanup", "superpowers", "workflow"],
+        created_at=_EPOCH,
+    ),
+    SkillDefinition(
+        id="skill-superpowers-parallel-agents",
+        name="Dispatching Parallel Agents (Superpowers)",
+        description=(
+            "Concurrent subagent dispatch skill from obra/superpowers. When facing 2+ "
+            "independent problems (different test files, subsystems, bugs), dispatches one "
+            "focused agent per problem domain concurrently rather than sequentially. Each "
+            "agent gets self-contained context with specific scope, clear goal, constraints, "
+            "and expected output. Dramatically reduces time for independent investigations."
+        ),
+        category="collaboration",
+        auto_invoke_pattern=r"(parallel|concurrent|multiple.?bug|independent.?task|batch)",
+        compatible_agents=["agent-007", "agent-009", "agent-002", "agent-003"],
+        prompt_template=(
+            "You are using the superpowers:dispatching-parallel-agents skill.\n\n"
+            "WHEN TO USE: 2+ independent failures or tasks where fixing one doesn't affect others.\n\n"
+            "PROCESS:\n"
+            "1. Group failures/tasks by independent domain (tool A, subsystem B, file C)\n"
+            "2. For each domain, craft a focused agent prompt with:\n"
+            "   - Specific scope (ONE file or subsystem)\n"
+            "   - Clear goal (make these 3 tests pass)\n"
+            "   - Constraints (do NOT modify other code)\n"
+            "   - Expected output (summary of root cause + changes)\n"
+            "3. Dispatch ALL agents in parallel (using Task tool or equivalent)\n"
+            "4. When agents return: review each summary, verify no conflicts, run full suite\n\n"
+            "GOOD PROMPT: 'Fix the 3 failing tests in src/auth/auth.test.ts. Root cause is\n"
+            "timing issue in token refresh. Do NOT change src/api/. Return: what you found + fixed.'\n\n"
+            "DO NOT USE when: failures are related, need full system context, agents would\n"
+            "interfere (editing same files), or you don't know yet what's broken."
+        ),
+        source_repo="obra/superpowers",
+        installs=4870,
+        tags=["parallel", "concurrent", "subagents", "superpowers", "speed"],
+        created_at=_EPOCH,
+    ),
+    SkillDefinition(
+        id="skill-superpowers-git-worktrees",
+        name="Using Git Worktrees (Superpowers)",
+        description=(
+            "Git worktree isolation skill from obra/superpowers. Creates an isolated workspace "
+            "on a new branch for each feature or fix, runs project setup in the worktree, and "
+            "verifies a clean test baseline before any implementation starts. Enables true "
+            "parallel development branches without disturbing your main working tree. Activated "
+            "after brainstorming design approval."
+        ),
+        category="collaboration",
+        auto_invoke_pattern=r"(worktree|git.?worktree|isolated.?branch|parallel.?branch)",
+        compatible_agents=["agent-008", "agent-007", "agent-001"],
+        prompt_template=(
+            "You are using the superpowers:using-git-worktrees skill.\n\n"
+            "WORKFLOW:\n"
+            "1. Create worktree on new branch:\n"
+            "   git worktree add ../worktrees/<feature-name> -b feature/<feature-name>\n\n"
+            "2. Change into the worktree directory:\n"
+            "   cd ../worktrees/<feature-name>\n\n"
+            "3. Run project setup (install deps, build, etc.):\n"
+            "   npm install (or equivalent for your stack)\n\n"
+            "4. Verify clean test baseline:\n"
+            "   npm test (or equivalent)\n"
+            "   ALL tests must pass before any implementation work begins.\n"
+            "   If tests fail on baseline: stop and fix before proceeding.\n\n"
+            "5. Save worktree path for cleanup:\n"
+            "   Store path so finishing-a-development-branch can clean up later.\n\n"
+            "CLEANUP (after branch complete):\n"
+            "   git worktree remove ../worktrees/<feature-name>\n"
+            "   (called automatically by finishing-a-development-branch for Options 1 & 4)"
+        ),
+        source_repo="obra/superpowers",
+        installs=3990,
+        tags=["git", "worktree", "isolation", "superpowers", "parallel-dev"],
+        created_at=_EPOCH,
+    ),
 ]
 
 _SKILLS_BY_ID: dict[str, SkillDefinition] = {s.id: s for s in _SKILLS}
