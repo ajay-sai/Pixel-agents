@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import Body, FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -138,11 +139,46 @@ async def get_task(task_id: str) -> AgentTask:
 
 
 @app.post("/api/tasks/{task_id}/hire", response_model=dict[str, Any])
-async def hire_best_agent(task_id: str) -> dict[str, Any]:
+async def hire_best_agent(
+    task_id: str,
+    body: dict[str, Any] = Body(default={}),
+) -> dict[str, Any]:
+    """Hire an agent for a task.
+
+    If ``body`` contains an ``agent_id`` key, that specific agent is hired
+    directly.  Otherwise the router picks the best-matching agent automatically.
+    """
     task = tracker.tasks.get(task_id)
     if task is None:
         raise HTTPException(status_code=404, detail=f"Task '{task_id}' not found")
 
+    explicit_agent_id: str | None = body.get("agent_id")
+
+    if explicit_agent_id:
+        # Hire the explicitly requested agent
+        agent = marketplace.get_agent_by_id(explicit_agent_id)
+        if agent is None:
+            raise HTTPException(status_code=404, detail=f"Agent '{explicit_agent_id}' not found")
+        instance = tracker.hire_agent(agent.id, task_id)
+        tracker.start_simulation(task_id)
+        await tracker.broadcast(
+            {
+                "type": "agent_hired",
+                "task_id": task_id,
+                "agent_id": agent.id,
+                "agent_name": agent.name,
+                "confidence": 1.0,
+            }
+        )
+        return {
+            "task_id": task_id,
+            "agent": agent,
+            "confidence": 1.0,
+            "reasoning": f"Directly hired {agent.name} as requested.",
+            "instance": instance,
+        }
+
+    # Auto-hire: route to best agent
     req = RouterRequest(
         task_description=task.description,
         required_skills=task.required_skills,
@@ -259,7 +295,7 @@ async def ws_tracker(websocket: WebSocket) -> None:
     # Send current state on connect
     try:
         await websocket.send_text(
-            __import__("json").dumps(
+            json.dumps(
                 {"type": "init", "canvas": tracker.get_canvas_state()}, default=str
             )
         )

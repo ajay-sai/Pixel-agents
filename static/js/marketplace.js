@@ -73,7 +73,7 @@ function renderAgentCard(agent) {
           <div class="flex gap-4 items-center mt-4">
             <span class="star-rating">${stars}</span>
             <span class="text-xs text-dim">(${agent.rating})</span>
-            <span class="text-xs text-dim" style="margin-left:8px;">⬇ ${agent.installs.toLocaleString()}</span>
+            <span class="text-xs text-dim" data-installs="${agent.id}" style="margin-left:8px;">⬇ ${agent.installs.toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -139,8 +139,10 @@ async function installAgent(agentId) {
       btn.style.opacity = '0.6';
     }
 
-    // Update installs count in the card
+    // Update installs count in the card and in the DOM
     _allAgents = _allAgents.map(a => a.id === agentId ? updated : a);
+    const installsSpan = document.querySelector(`[data-installs="${agentId}"]`);
+    if (installsSpan) installsSpan.textContent = `⬇ ${updated.installs.toLocaleString()}`;
   } catch (e) {
     console.error('installAgent error:', e);
   }
@@ -171,8 +173,12 @@ async function openHireDialog(agentId) {
     if (!taskRes.ok) throw new Error(await taskRes.text());
     const task = await taskRes.json();
 
-    // Force-hire this specific agent via tracker
-    const hireRes = await fetch(`/api/tasks/${task.id}/hire`, { method: 'POST' });
+    // Hire this specific agent by passing agent_id in the request body
+    const hireRes = await fetch(`/api/tasks/${task.id}/hire`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ agent_id: agentId }),
+    });
     if (!hireRes.ok) throw new Error(await hireRes.text());
 
     // Switch to tracker

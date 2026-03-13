@@ -92,5 +92,5 @@ def test_route_selects_best_skill_match(
     result = router.route_task(req, market)
     assert result is not None
     selected_skills = set(result.selected_agent.skills)
-    # Documentation Writer has both DOCUMENTATION and WRITING
-    assert AgentSkill.DOCUMENTATION in selected_skills or AgentSkill.WRITING in selected_skills
+    # Documentation Writer has both DOCUMENTATION and WRITING — verify full overlap
+    assert AgentSkill.DOCUMENTATION in selected_skills and AgentSkill.WRITING in selected_skills

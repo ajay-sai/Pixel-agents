@@ -443,9 +443,11 @@ class AgentTracker:
     def start_simulation(self, task_id: str) -> None:
         """Schedule simulation as a background asyncio task."""
         if task_id not in self._simulation_tasks:
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             t = loop.create_task(self.simulate_task_progress(task_id))
+            # Store first so the done_callback always removes the correct entry
             self._simulation_tasks[task_id] = t
+            t.add_done_callback(lambda _: self._simulation_tasks.pop(task_id, None))
 
 
 # Module-level singleton

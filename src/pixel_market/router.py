@@ -48,7 +48,7 @@ def _build_reasoning(
     matched = set(required_skills) & set(agent.skills)
     missing = set(required_skills) - set(agent.skills)
     parts: list[str] = [
-        f"Selected **{agent.name}** with {confidence:.0%} confidence.",
+        f"Selected {agent.name} with {confidence:.0%} confidence.",
         f"Skill match: {skill_overlap:.0%} ({', '.join(s.value for s in matched) or 'none'}).",
     ]
     if missing:
@@ -57,7 +57,7 @@ def _build_reasoning(
             f"(agent may still partially fulfil these)."
         )
     parts.append(
-        f"Rating {agent.rating}/5 · {agent.installs:,} installs · "
+        f"Rating {agent.rating}/5, {agent.installs:,} installs, "
         f"source: {agent.source_repo}."
     )
     return " ".join(parts)

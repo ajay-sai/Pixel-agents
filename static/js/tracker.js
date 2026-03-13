@@ -113,10 +113,10 @@ function renderTaskCard(task) {
       </div>
 
       ${recentEvents ? `
-        <div style="background:#060e18;border:1px solid #0d1a26;border-radius:2px;padding:6px;max-height:90px;overflow-y:auto;">
+        <div data-event-log="1" style="background:#060e18;border:1px solid #0d1a26;border-radius:2px;padding:6px;max-height:90px;overflow-y:auto;">
           ${recentEvents}
         </div>
-      ` : ''}
+      ` : `<div data-event-log="1" style="display:none;background:#060e18;border:1px solid #0d1a26;border-radius:2px;padding:6px;max-height:90px;overflow-y:auto;"></div>`}
 
       ${reasoningSection}
 
@@ -198,18 +198,16 @@ function updateTaskProgress(taskId, progress, eventType, message) {
   // Append to event log inside the card
   const card = document.getElementById(`task-card-${taskId}`);
   if (card) {
-    let logDiv = card.querySelector('[data-event-log]');
-    if (!logDiv) {
-      logDiv = document.createElement('div');
-      logDiv.setAttribute('data-event-log', '1');
-      logDiv.style.cssText = 'background:#060e18;border:1px solid #0d1a26;border-radius:2px;padding:6px;max-height:90px;overflow-y:auto;margin-top:4px;';
-      card.appendChild(logDiv);
+    const logDiv = card.querySelector('[data-event-log]');
+    if (logDiv) {
+      // Make visible on first live event (it may have been hidden when empty)
+      logDiv.style.display = '';
+      const item = document.createElement('div');
+      item.style.cssText = 'font-size:0.5rem;color:var(--text-dim);padding:2px 0;border-bottom:1px solid #0d1a26;';
+      item.innerHTML = `<span style="color:var(--neon-yellow);">[${window.escapeHtml(eventType)}]</span> ${window.escapeHtml(message)}`;
+      logDiv.insertBefore(item, logDiv.firstChild);
+      while (logDiv.children.length > 6) logDiv.removeChild(logDiv.lastChild);
     }
-    const item = document.createElement('div');
-    item.style.cssText = 'font-size:0.5rem;color:var(--text-dim);padding:2px 0;border-bottom:1px solid #0d1a26;';
-    item.innerHTML = `<span style="color:var(--neon-yellow);">[${window.escapeHtml(eventType)}]</span> ${window.escapeHtml(message)}`;
-    logDiv.insertBefore(item, logDiv.firstChild);
-    while (logDiv.children.length > 6) logDiv.removeChild(logDiv.lastChild);
   }
 }
 
