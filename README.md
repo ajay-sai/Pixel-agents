@@ -44,14 +44,20 @@ Pixel Market merges concepts from six open-source projects into a unified platfo
 | **Claude Code Plugin** | Full plugin at `plugins/` with 3 commands (`/hire`, `/task`, `/status`), 2 agents, 2 skills, and a `SessionStart` hook |
 | **Auto-Hire Router** | Describe a task + select skills → scores all agents (60% skill match + 20% rating + 10% installs + 10% tags) and returns best match with confidence + reasoning |
 | **FastAPI Backend** | 14 REST endpoints + `/ws/tracker` WebSocket; background task simulations drive realistic progress events |
-| **42 Tests Passing** | pytest tests for marketplace, router, tracker, and skills modules |
+| **Next.js Live Dashboard** | Animated 20×12 pixel world where hired agents move and work in real time with per-agent pause/resume/cancel controls |
+| **Auto-Hire API** | `POST /api/auto-hire` keyword-matches a task description to the optimal agent set with confidence score |
+| **42 Python Tests** | pytest tests for marketplace, router, tracker, and skills modules |
 
 ---
 
 ## Architecture
 
+This repository ships **two complementary implementations** of the Pixel Agents platform:
+
+### 🐍 Python / FastAPI backend (`src/pixel_market/` + `static/`)
+
 ```
-pixel_market/
+src/pixel_market/
 ├── main.py            # FastAPI app: REST + WebSocket + lifespan simulations
 ├── models.py          # Pydantic v2 models (agent, task, skill, sub-agent fields)
 ├── marketplace.py     # 12 pre-loaded agents from all 6 source repos
@@ -68,8 +74,43 @@ static/
     ├── tracker.js     # Task cards + mini animated sprite canvases
     ├── pixel-canvas.js # Full pixel-art canvas: sprites, zones, furniture, sub-agent links
     └── skills.js      # Skills grid, search, download, attach
+```
 
-plugins/               # Claude Code plugin (anthropics/claude-code compatible)
+**Tech stack:** Python 3.11 · FastAPI · Pydantic v2 · Uvicorn · WebSockets · HTML5 Canvas · Vanilla JS
+
+### ⚡ Next.js 15 / TypeScript frontend (`src/app/`)
+
+```
+src/
+├── app/
+│   ├── marketplace/page.tsx   # Browse & hire agents
+│   ├── dashboard/page.tsx     # Animated 20×12 pixel world + AGOR task tree
+│   ├── api/agents/route.ts    # Agent listing API
+│   ├── api/auto-hire/route.ts # Keyword-match auto-hire endpoint
+│   └── api/tasks/route.ts     # Task CRUD API
+├── components/
+│   ├── AgentWorld.tsx         # Live pixel world simulation
+│   ├── AgorView.tsx           # AGOR-style hierarchical task tree
+│   ├── AgentCard.tsx          # Marketplace card with hire action
+│   ├── AgentControlPanel.tsx  # Per-agent pause/resume/cancel controls
+│   ├── PixelSprite.tsx        # CSS pixel-art sprite renderer
+│   ├── TaskPanel.tsx          # Task submission panel
+│   └── TaskTracker.tsx        # Real-time task progress tracker
+├── lib/
+│   ├── store.ts               # In-memory singleton state store
+│   ├── auto-hire.ts           # Keyword-to-agent matching logic
+│   └── tasks.ts               # Task management utilities
+└── types/index.ts             # Shared TypeScript types
+
+CLAUDE.md                      # Auto-hire API contract for Claude Code
+```
+
+**Tech stack:** Next.js 15 · TypeScript · Tailwind CSS · React 19
+
+### 🔌 Claude Code Plugin (`plugins/`)
+
+```
+plugins/
 ├── .claude-plugin/plugin.json
 ├── commands/          # /pixel-market:hire  /pixel-market:task  /pixel-market:status
 ├── agents/            # orchestrator  task-decomposer
@@ -77,11 +118,11 @@ plugins/               # Claude Code plugin (anthropics/claude-code compatible)
 └── hooks/             # session-start.json
 ```
 
-**Tech stack:** Python 3.11 · FastAPI · Pydantic v2 · Uvicorn · WebSockets · HTML5 Canvas · Vanilla JS
-
 ---
 
 ## Quick Start
+
+### Python / FastAPI (full backend + pixel canvas frontend)
 
 ```bash
 pip install -e ".[dev]"
@@ -89,10 +130,22 @@ uvicorn pixel_market.main:app --reload --host 0.0.0.0 --port 8000
 # Open http://localhost:8000
 ```
 
+### Next.js (React frontend with live dashboard)
+
+```bash
+npm install
+npm run dev
+# Open http://localhost:3000
+```
+
 ## Running Tests
 
 ```bash
+# Python tests (42 tests)
 pytest
+
+# Next.js build check
+npm run build
 ```
 
 ## Claude Code Plugin

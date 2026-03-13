@@ -84,6 +84,8 @@ const INITIAL_AGENTS: Agent[] = [
     accentColor: '#8822dd',
     position: { x: 16, y: 3 },
   },
+  {
+    id: 'pixelcraft',
     name: 'PixelCraft',
     type: 'Designer',
     description: 'Design agent for UI, accessibility, CSS, and Figma.',
