@@ -308,8 +308,13 @@ class AgentTracker:
 
         event_pairs = list(_SAMPLE_EVENTS)
 
+        # Initial delay before emitting any simulated events.
+        await asyncio.sleep(_SIM_INITIAL_DELAY)
+
         for idx, (etype, msg) in enumerate(event_pairs):
-            await asyncio.sleep(_SIM_INITIAL_DELAY + idx * _SIM_STEP_DELAY)
+            # Apply a constant step delay between events after the first.
+            if idx > 0:
+                await asyncio.sleep(_SIM_STEP_DELAY)
 
             task = self.tasks.get(task_id)
             if task is None or task.status == TaskStatus.COMPLETE:
