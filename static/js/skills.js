@@ -2,10 +2,9 @@
  * skills.js — Skills Library UI for Pixel Market
  */
 
-// Local escapeHtml fallback (app.js also defines window.escapeHtml — use whichever is available)
-function _skillEsc(s) {
-  if (typeof window !== 'undefined' && typeof window.escapeHtml === 'function') return window._skillEsc(s);
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// XSS-safe HTML escaping (standalone implementation — no window.escapeHtml dependency)
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 let _allSkills = [];
@@ -48,7 +47,7 @@ function renderSkillGrid(skills) {
 
 function renderSkillCard(skill) {
   const tags = (skill.tags || []).map(t =>
-    `<span class="pixel-badge skill-tag-badge">${_skillEsc(t)}</span>`
+    `<span class="pixel-badge skill-tag-badge">${escapeHtml(t)}</span>`
   ).join('');
   const agents = (skill.compatible_agents || []).join(', ');
   const pattern = skill.auto_invoke_pattern
@@ -56,31 +55,31 @@ function renderSkillCard(skill) {
     : '';
 
   return `
-  <div class="skill-card pixel-card" data-skill-id="${_skillEsc(skill.id)}">
+  <div class="skill-card pixel-card" data-skill-id="${escapeHtml(skill.id)}">
     <div class="skill-card__header">
       <div class="skill-card__title">
-        <span class="skill-category-dot skill-category--${_skillEsc(skill.category)}"></span>
-        ${_skillEsc(skill.name)}
+        <span class="skill-category-dot skill-category--${escapeHtml(skill.category)}"></span>
+        ${escapeHtml(skill.name)}
       </div>
       ${pattern}
     </div>
-    <div class="skill-card__desc text-xs text-dim">${_skillEsc(skill.description.slice(0, 140))}…</div>
+    <div class="skill-card__desc text-xs text-dim">${escapeHtml(skill.description.slice(0, 140))}…</div>
     <div class="skill-card__meta text-xs text-dim">
       <span>📦 ${skill.installs.toLocaleString()} installs</span>
-      <span class="skill-badge skill-badge--${_skillEsc(skill.category)}">${_skillEsc(skill.category)}</span>
+      <span class="skill-badge skill-badge--${escapeHtml(skill.category)}">${escapeHtml(skill.category)}</span>
     </div>
     <div class="skill-card__tags">${tags}</div>
     <div class="skill-card__agents text-xs text-dim" style="margin-top:6px;">
-      Agents: <span style="color:#8899aa;">${_skillEsc(agents) || '—'}</span>
+      Agents: <span style="color:#8899aa;">${escapeHtml(agents) || '—'}</span>
     </div>
     <div class="skill-card__actions">
       <button class="pixel-btn pixel-btn--ghost skill-download-btn" 
-              onclick="downloadSkill('${_skillEsc(skill.id)}')"
+              onclick="downloadSkill('${escapeHtml(skill.id)}')"
               style="font-size:0.5rem;padding:5px 8px;">
         ⬇ Download .md
       </button>
       <button class="pixel-btn pixel-btn--ghost skill-attach-btn"
-              onclick="attachSkillToTask('${_skillEsc(skill.id)}')"
+              onclick="attachSkillToTask('${escapeHtml(skill.id)}')"
               style="font-size:0.5rem;padding:5px 8px;">
         🔗 Attach to Task
       </button>

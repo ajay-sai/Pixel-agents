@@ -191,19 +191,14 @@ function drawPixelChar(ctx, cx, cy, statusColor, animState, frame, scale, isSuba
 function drawCrown(ctx, cx, cy, scale) {
   const s = scale;
   ctx.fillStyle = '#ffcc00';
-  // crown base
-  ctx.fillRect(-3 * s, -14 * s + cy, 6 * s, 2 * s);
-  // crown prongs
-  ctx.fillRect(-3 * s, -16 * s + cy, 1 * s, 2 * s);
-  ctx.fillRect(-1 * s, -15 * s + cy, 2 * s, 1 * s);
-  ctx.fillRect(2 * s, -16 * s + cy, 1 * s, 2 * s);
-  // center adjustment
   ctx.save();
-  ctx.translate(cx, 0);
-  ctx.fillRect(-3 * s, -14 * s + cy, 6 * s, 2 * s);
-  ctx.fillRect(-3 * s, -16 * s + cy, 1 * s, 2 * s);
-  ctx.fillRect(-1 * s, -15 * s + cy, 2 * s, 1 * s);
-  ctx.fillRect(2 * s, -16 * s + cy, 1 * s, 2 * s);
+  ctx.translate(cx, cy);
+  // crown base
+  ctx.fillRect(-3 * s, -14 * s, 6 * s, 2 * s);
+  // crown prongs
+  ctx.fillRect(-3 * s, -16 * s, 1 * s, 2 * s);
+  ctx.fillRect(-1 * s, -15 * s, 2 * s, 1 * s);
+  ctx.fillRect(2 * s,  -16 * s, 1 * s, 2 * s);
   ctx.restore();
 }
 
@@ -639,3 +634,25 @@ function updateMiniSprite(canvasId, status) {
   const entry = _miniSprites.get(canvasId);
   if (entry) entry.status = status;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOOT — initialise PixelCanvas and wire up refresh button
+// ─────────────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const canvasEl = document.getElementById('pixel-canvas');
+  const detailEl = document.getElementById('canvas-detail-panel');
+  if (!canvasEl) return;
+
+  const pc = new PixelCanvas(canvasEl, detailEl);
+  window.pixelCanvas = pc;
+
+  // Auto-load when the canvas tab becomes active
+  document.querySelector('[data-tab="canvas"]')?.addEventListener('click', () => {
+    pc.loadCanvasState();
+  });
+
+  // Refresh button
+  document.getElementById('refresh-canvas-btn')?.addEventListener('click', () => {
+    pc.loadCanvasState();
+  });
+});
