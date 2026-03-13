@@ -1,0 +1,30 @@
+{
+  "name": "pixel-market",
+  "version": "1.0.0",
+  "description": "Pixel-style AI agent marketplace with live task tracking, skill library, and multi-agent orchestration",
+  "commands": [
+    {"name": "hire", "description": "Auto-hire the best agent for a task from the Pixel Market marketplace"},
+    {"name": "task", "description": "Create and track a new agent task with real-time progress"},
+    {"name": "status", "description": "Show live status of all running agents and tasks"}
+  ],
+  "agents": [
+    {"name": "orchestrator", "description": "Coordinates multiple agents across tasks using AGOR-style spatial orchestration"},
+    {"name": "task-decomposer", "description": "Breaks complex tasks into parallel subtasks and spawns sub-agents"}
+  ],
+  "skills": [
+    {"name": "auto-hire", "description": "Automatically select and hire the best-matched agent for any task"},
+    {"name": "task-tracking", "description": "Track agent task progress in real-time via WebSocket"}
+  ],
+  "hooks": [
+    {"event": "session_start", "file": "hooks/session-start.json"}
+  ],
+  "api_base": "http://localhost:8000",
+  "source_repos": [
+    "pablodelucca/pixel-agents",
+    "preset-io/agor",
+    "Jeffallan/claude-skills",
+    "msitarzewski/agency-agents",
+    "VoltAgent/awesome-claude-code-subagents",
+    "inclusionAI/AReaL"
+  ]
+}

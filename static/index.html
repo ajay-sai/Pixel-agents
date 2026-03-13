@@ -17,6 +17,7 @@
     <button class="tab-btn" data-tab="tracker">📡 Live Tracker</button>
     <button class="tab-btn" data-tab="canvas">🖼️ Canvas View</button>
     <button class="tab-btn" data-tab="autohire">🤖 Auto-Hire</button>
+    <button class="tab-btn" data-tab="skills">🎯 Skills</button>
   </nav>
 
   <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
@@ -132,7 +133,7 @@
         </div>
         <div class="flex gap-16 text-xs text-dim">
           <span>Click an agent to inspect</span>
-          <span>■ IDLE &nbsp; ■ WORKING &nbsp; ■ COMPLETE</span>
+          <span>■ Lobby &nbsp; ■ Dev Floor &nbsp; ■ Review &nbsp; ■ Deploy Bay &nbsp; ■ Research Lab</span>
         </div>
       </div>
 
@@ -195,6 +196,38 @@
     </div>
   </div>
 
+  <!-- =========================================================
+       TAB 5: SKILLS LIBRARY
+       ========================================================= -->
+  <div class="tab-panel" id="tab-skills">
+    <div class="flex gap-12 mb-16" style="flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:200px;">
+        <label class="text-sm text-dim" style="display:block;margin-bottom:6px;">SEARCH SKILLS</label>
+        <input type="text" id="skills-search" class="pixel-input" placeholder="Search by name, tag, description…" />
+      </div>
+      <div style="min-width:180px;">
+        <label class="text-sm text-dim" style="display:block;margin-bottom:6px;">FILTER BY CATEGORY</label>
+        <select id="skills-category-filter" class="pixel-input">
+          <option value="">All Categories</option>
+          <option value="frontend">Frontend</option>
+          <option value="review">Review</option>
+          <option value="security">Security</option>
+          <option value="debugging">Debugging</option>
+          <option value="documentation">Documentation</option>
+          <option value="testing">Testing</option>
+          <option value="devops">DevOps</option>
+          <option value="data">Data</option>
+          <option value="research">Research</option>
+          <option value="reasoning">Reasoning</option>
+          <option value="orchestration">Orchestration</option>
+        </select>
+      </div>
+    </div>
+    <div class="skills-grid" id="skills-grid">
+      <div class="text-dim text-sm" style="padding:24px;">Loading skills…</div>
+    </div>
+  </div>
+
 </main>
 
 <!-- ===== NEW TASK MODAL ===== -->
@@ -225,6 +258,7 @@
 <script src="/static/js/pixel-canvas.js"></script>
 <script src="/static/js/marketplace.js"></script>
 <script src="/static/js/tracker.js"></script>
+<script src="/static/js/skills.js"></script>
 <script src="/static/js/app.js"></script>
 </body>
 </html>

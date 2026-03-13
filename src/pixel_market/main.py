@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from .marketplace import Marketplace, marketplace
 from .models import AgentSkill, AgentTask, MarketplaceAgent, RouterRequest
 from .router import AgentRouter, router as agent_router
+from .skills_library import SkillsLibrary, skills_library
 from .tracker import AgentTracker, tracker
 
 logger = logging.getLogger(__name__)
@@ -208,6 +209,42 @@ async def get_stats() -> dict[str, Any]:
     mstats["total_tasks"] = len(tracker.tasks)
     mstats["running_agents"] = len(tracker.agent_instances)
     return mstats
+
+
+# ---------------------------------------------------------------------------
+# Skills endpoints
+# ---------------------------------------------------------------------------
+
+
+@app.get("/api/skills")
+async def list_skills(
+    q: str | None = Query(default=None, description="Full-text search"),
+    category: str | None = Query(default=None, description="Filter by category"),
+) -> list[dict[str, Any]]:
+    results = skills_library.search_skills(query=q, category=category)
+    return [s.model_dump() for s in results]
+
+
+@app.get("/api/skills/{skill_id}")
+async def get_skill(skill_id: str) -> dict[str, Any]:
+    skill = skills_library.get_skill_by_id(skill_id)
+    if skill is None:
+        raise HTTPException(status_code=404, detail=f"Skill '{skill_id}' not found")
+    return skill.model_dump()
+
+
+@app.post("/api/skills/{skill_id}/download")
+async def download_skill(skill_id: str) -> dict[str, Any]:
+    content = skills_library.download_skill(skill_id)
+    if content is None:
+        raise HTTPException(status_code=404, detail=f"Skill '{skill_id}' not found")
+    skill = skills_library.get_skill_by_id(skill_id)
+    return {
+        "skill_id": skill_id,
+        "filename": f"{skill_id}.md",
+        "content": content,
+        "name": skill.name if skill else skill_id,
+    }
 
 
 # ---------------------------------------------------------------------------

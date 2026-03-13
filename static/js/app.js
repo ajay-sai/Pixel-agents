@@ -27,6 +27,9 @@ function initTabs() {
       if (target === 'canvas') {
         window.pixelCanvas?.loadCanvasState();
       }
+      if (target === 'skills') {
+        if (typeof initSkillsTab === 'function') initSkillsTab();
+      }
     });
   });
 }
@@ -102,6 +105,15 @@ function handleWebSocketMessage(msg) {
       window.pixelCanvas?.handleWebSocket(msg);
       addEventToFeedGlobal(msg);
       loadStats();
+      break;
+
+    case 'agent_update':
+      window.pixelCanvas?.handleWebSocket(msg);
+      // Update mini sprite status if visible
+      if (msg.instance_id && typeof updateMiniSprite === 'function') {
+        const spriteId = `sprite-${msg.task_id || ''}`;
+        updateMiniSprite(spriteId, msg.status || 'IDLE');
+      }
       break;
 
     case 'agent_installed':

@@ -26,9 +26,13 @@ _SPRITES = ["🧙", "🕵️", "🤖", "👾", "🦾", "🧬", "🛸", "🎮", "
 
 _SAMPLE_EVENTS: list[tuple[str, str]] = [
     ("started", "Analyzing task requirements…"),
+    ("reasoning", "Step 1: Analyzing requirements → identifying 3 core components"),
+    ("reasoning", "Step 2: Evaluating implementation strategies → selected approach A"),
     ("thinking", "Breaking down the problem into subtasks…"),
+    ("reasoning", "Step 3: Checking for edge cases → found 2 potential issues"),
     ("working", "Generating initial implementation…"),
     ("checkpoint", "Running internal validation…"),
+    ("reasoning", "Step 4: Validating output against success criteria → all checks pass"),
     ("working", "Refining output based on constraints…"),
     ("checkpoint", "Cross-checking against best practices…"),
     ("working", "Finalizing implementation…"),
@@ -79,7 +83,7 @@ class AgentTracker:
     # ------------------------------------------------------------------
 
     def _prepopulate(self) -> None:
-        """Seed tracker with 3 running agents and sample tasks."""
+        """Seed tracker with 3 running agents and sample tasks, plus 1 sub-agent."""
         seeds = [
             {
                 "agent_id": "agent-001",
@@ -119,6 +123,8 @@ class AgentTracker:
             },
         ]
 
+        orchestrator_instance_id: str | None = None
+
         for seed in seeds:
             task = AgentTask(
                 id=f"task-{uuid.uuid4().hex[:8]}",
@@ -143,14 +149,56 @@ class AgentTracker:
                 animation_state="working",
                 skills=seed["skills"],
             )
-            # Add a couple of starter events
-            for etype, msg in _SAMPLE_EVENTS[:2]:
+            # Add a couple of starter events including a reasoning step
+            for etype, msg in _SAMPLE_EVENTS[:3]:
                 ev = _make_event(seed["agent_id"], task.id, etype, msg)
                 task.events.append(ev)
                 self.event_log.append(ev)
 
             self.tasks[task.id] = task
             self.agent_instances[instance.id] = instance
+
+            if seed["agent_id"] == "agent-012":
+                orchestrator_instance_id = instance.id
+
+        # Spawn 1 sub-agent linked to the Pixel Canvas Orchestrator
+        if orchestrator_instance_id:
+            parent_task = next(
+                t for t in self.tasks.values()
+                if t.assigned_agent_id == "agent-012"
+            )
+            sub_task = AgentTask(
+                id=f"task-{uuid.uuid4().hex[:8]}",
+                title="Run test suite for CI/CD",
+                description="Execute all unit and integration tests as part of pipeline setup",
+                required_skills=[AgentSkill.TESTING],
+                assigned_agent_id="agent-009",
+                status=TaskStatus.IN_PROGRESS,
+                created_at=_now(),
+                started_at=_now(),
+                pixel_position={"x": 640, "y": 220},
+                progress=10,
+            )
+            sub_instance = AgentInstance(
+                id=f"inst-{uuid.uuid4().hex[:8]}",
+                agent_id="agent-009",
+                name="Test Engineer",
+                status=AgentStatus.WORKING,
+                current_task_id=sub_task.id,
+                character_sprite="⚡",
+                pixel_position={"x": 630, "y": 210},
+                animation_state="working",
+                skills=[AgentSkill.TESTING],
+                parent_instance_id=orchestrator_instance_id,
+                is_subagent=True,
+                depth=1,
+            )
+            for etype, msg in _SAMPLE_EVENTS[:2]:
+                ev = _make_event("agent-009", sub_task.id, etype, msg)
+                sub_task.events.append(ev)
+                self.event_log.append(ev)
+            self.tasks[sub_task.id] = sub_task
+            self.agent_instances[sub_instance.id] = sub_instance
 
     # ------------------------------------------------------------------
     # Public API
@@ -226,6 +274,47 @@ class AgentTracker:
             self.agent_instances[instance.id] = instance.model_copy(
                 update={"status": status, "animation_state": animation_state}
             )
+
+    def spawn_subagent(
+        self,
+        parent_instance_id: str,
+        agent_id: str,
+        task_id: str,
+    ) -> AgentInstance | None:
+        """Spawn a sub-agent linked to a parent instance."""
+        parent = self.agent_instances.get(parent_instance_id)
+        if parent is None:
+            return None
+        task = self.tasks.get(task_id)
+        if task is None:
+            return None
+        parent_depth = parent.depth
+        sub = AgentInstance(
+            id=f"inst-{uuid.uuid4().hex[:8]}",
+            agent_id=agent_id,
+            name=f"Sub-{agent_id}",
+            status=AgentStatus.WORKING,
+            current_task_id=task_id,
+            character_sprite=_SPRITES[len(self.agent_instances) % len(_SPRITES)],
+            pixel_position={
+                "x": parent.pixel_position["x"] + 40,
+                "y": parent.pixel_position["y"] + 40,
+            },
+            animation_state="working",
+            skills=parent.skills,
+            parent_instance_id=parent_instance_id,
+            is_subagent=True,
+            depth=parent_depth + 1,
+        )
+        self.agent_instances[sub.id] = sub
+        self.tasks[task_id] = task.model_copy(
+            update={
+                "assigned_agent_id": agent_id,
+                "status": TaskStatus.IN_PROGRESS,
+                "started_at": _now(),
+            }
+        )
+        return sub
 
     def add_task_event(
         self,

@@ -20,6 +20,7 @@
   --neon-pink:      #ff00aa;
   --neon-orange:    #ff8800;
   --neon-purple:    #aa00ff;
+  --reasoning-color:#8855ff;
 
   --text-primary:   #e0e0e0;
   --text-secondary: #8899aa;
@@ -576,3 +577,168 @@ select.pixel-input option { background: var(--bg-panel); color: var(--text-prima
   .tab-btn    { padding: 8px 10px; font-size: 0.5rem; }
   .agent-grid { grid-template-columns: 1fr; }
 }
+
+/* ===================================================================
+   SPRITE CANVAS — mini 48×48 animated pixel character in task cards
+   =================================================================== */
+.sprite-canvas {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  background: rgba(10, 14, 20, 0.85);
+  flex-shrink: 0;
+}
+
+@keyframes sprite-idle {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-2px); }
+}
+
+/* ===================================================================
+   SKILLS TAB
+   =================================================================== */
+
+/* Grid layout for skill cards */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+/* Individual skill card */
+.skill-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+
+.skill-card:hover {
+  border-color: var(--neon-green);
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.12);
+}
+
+.skill-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.skill-card__title {
+  font-size: 0.6rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-card__desc {
+  font-size: 0.5rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.skill-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.5rem;
+}
+
+.skill-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.skill-card__agents {
+  font-size: 0.45rem;
+}
+
+.skill-card__actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* Auto-invoke badge */
+.skill-auto-badge {
+  font-size: 0.45rem;
+  color: var(--neon-yellow);
+  background: rgba(255, 255, 0, 0.1);
+  border: 1px solid rgba(255, 255, 0, 0.3);
+  border-radius: 2px;
+  padding: 2px 5px;
+}
+
+/* Category badge */
+.skill-badge {
+  font-size: 0.45rem;
+  padding: 2px 6px;
+  border-radius: 2px;
+  font-family: "Press Start 2P", monospace;
+}
+
+.skill-badge--frontend     { background: rgba(0, 187, 255, 0.15); color: var(--neon-blue); }
+.skill-badge--review       { background: rgba(255, 255, 0, 0.1);  color: var(--neon-yellow); }
+.skill-badge--security     { background: rgba(255, 0, 68, 0.12);  color: #ff4455; }
+.skill-badge--debugging    { background: rgba(0, 255, 136, 0.1);  color: var(--neon-green); }
+.skill-badge--documentation{ background: rgba(160, 80, 255, 0.15);color: #aa55ff; }
+.skill-badge--testing      { background: rgba(0, 255, 136, 0.08); color: #44cc88; }
+.skill-badge--devops       { background: rgba(255, 140, 0, 0.15); color: #ffaa00; }
+.skill-badge--data         { background: rgba(0, 187, 255, 0.1);  color: #44aacc; }
+.skill-badge--research     { background: rgba(160, 80, 255, 0.1); color: #9955cc; }
+.skill-badge--reasoning    { background: rgba(100, 80, 220, 0.15);color: #7766ee; }
+.skill-badge--orchestration{ background: rgba(255, 0, 170, 0.12); color: var(--neon-pink); }
+
+/* Category dot indicator */
+.skill-category-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.skill-category--frontend      { background: var(--neon-blue); }
+.skill-category--review        { background: var(--neon-yellow); }
+.skill-category--security      { background: #ff4455; }
+.skill-category--debugging     { background: var(--neon-green); }
+.skill-category--documentation { background: #aa55ff; }
+.skill-category--testing       { background: #44cc88; }
+.skill-category--devops        { background: #ffaa00; }
+.skill-category--data          { background: #44aacc; }
+.skill-category--research      { background: #9955cc; }
+.skill-category--reasoning     { background: #7766ee; }
+.skill-category--orchestration { background: var(--neon-pink); }
+
+/* Tag badges inside skill cards */
+.skill-tag-badge {
+  font-size: 0.4rem;
+  padding: 2px 5px;
+  background: rgba(100, 120, 160, 0.15);
+  color: var(--text-dim);
+  border: 1px solid var(--border-dim);
+  border-radius: 2px;
+}
+
+/* ===================================================================
+   SUB-AGENT INDICATOR in tracker
+   =================================================================== */
+.subagent-indicator {
+  font-size: 0.45rem;
+  color: var(--neon-yellow);
+  background: rgba(255, 255, 0, 0.08);
+  border: 1px solid rgba(255, 255, 0, 0.2);
+  border-radius: 2px;
+  padding: 1px 4px;
+}
+

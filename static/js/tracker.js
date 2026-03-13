@@ -33,18 +33,24 @@ function renderTaskList(tasks) {
   const sorted = [...tasks].sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9));
 
   list.innerHTML = sorted.map(renderTaskCard).join('');
+  initTaskSprites();
 }
 
 function renderTaskCard(task) {
   const recentEvents = (task.events || [])
     .slice(-5)
     .reverse()
-    .map(ev => `
-      <div style="font-size:0.5rem;color:var(--text-dim);padding:2px 0;border-bottom:1px solid #0d1a26;">
+    .map(ev => {
+      const isReasoning = ev.event_type === 'reasoning';
+      const indent = isReasoning ? 'padding-left:12px;' : '';
+      const prefix = isReasoning ? '<span style="color:var(--reasoning-color);">→ </span>' : '';
+      return `
+      <div style="font-size:0.5rem;color:var(--text-dim);padding:2px 0;border-bottom:1px solid #0d1a26;${indent}">
         <span style="color:var(--neon-yellow);">[${window.escapeHtml(ev.event_type)}]</span>
-        ${window.escapeHtml(ev.message)}
+        ${prefix}${window.escapeHtml(ev.message)}
       </div>
-    `).join('');
+    `;
+    }).join('');
 
   const skills = (task.required_skills || [])
     .map(s => `<span class="pixel-badge badge-${s}" style="font-size:0.45rem;">${s.replace(/_/g,' ')}</span>`)
@@ -61,6 +67,26 @@ function renderTaskCard(task) {
 
   const isComplete = task.status === 'COMPLETE' || task.status === 'FAILED';
 
+  // Reasoning events for expandable trace
+  const reasoningEvents = (task.events || [])
+    .filter(ev => ev.event_type === 'reasoning')
+    .map(ev => `<div style="font-size:0.45rem;color:var(--reasoning-color);padding:1px 0;">→ ${window.escapeHtml(ev.message)}</div>`)
+    .join('');
+  const reasoningSection = reasoningEvents ? `
+    <details style="margin-top:6px;">
+      <summary style="font-size:0.5rem;color:var(--reasoning-color);cursor:pointer;">💭 View Reasoning Chain (${(task.events||[]).filter(e=>e.event_type==='reasoning').length} steps)</summary>
+      <div style="background:#0a0e14;border:1px solid #330066;border-radius:2px;padding:6px;margin-top:4px;">
+        ${reasoningEvents}
+      </div>
+    </details>` : '';
+
+  // Sprite canvas ID
+  const spriteId = `sprite-${task.id}`;
+  const spriteStatus = task.status === 'IN_PROGRESS' ? 'WORKING'
+                     : task.status === 'COMPLETE' ? 'COMPLETE'
+                     : task.status === 'FAILED' ? 'ERROR'
+                     : 'IDLE';
+
   return `
     <div class="pixel-card mb-12" id="task-card-${task.id}" style="border-color:${statusBorderColor(task.status)};">
       <div class="flex justify-between items-start gap-8 mb-8">
@@ -68,7 +94,12 @@ function renderTaskCard(task) {
           <div class="truncate" style="font-size:0.65rem;color:var(--text-primary);">${window.escapeHtml(task.title)}</div>
           ${agentLabel}
         </div>
-        <span class="task-status-badge status-${task.status}">${task.status.replace('_',' ')}</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <canvas class="sprite-canvas" id="${spriteId}" width="48" height="48"
+            data-status="${spriteStatus}"
+            style="image-rendering:pixelated;border:1px solid #223;border-radius:2px;"></canvas>
+          <span class="task-status-badge status-${task.status}">${task.status.replace('_',' ')}</span>
+        </div>
       </div>
 
       <div class="flex flex-wrap gap-4 mb-8">${skills}</div>
@@ -86,6 +117,8 @@ function renderTaskCard(task) {
           ${recentEvents}
         </div>
       ` : ''}
+
+      ${reasoningSection}
 
       ${!isComplete ? `
         <div class="flex gap-8 mt-8">
@@ -105,6 +138,19 @@ function statusBorderColor(status) {
     case 'FAILED':      return '#ff4455';
     default:            return 'var(--border-dim)';
   }
+}
+
+// -----------------------------------------------------------------------
+// Sprite canvas init for task cards
+// -----------------------------------------------------------------------
+
+function initTaskSprites() {
+  document.querySelectorAll('canvas.sprite-canvas').forEach(canvas => {
+    const status = canvas.dataset.status || 'IDLE';
+    if (typeof initMiniSprite === 'function') {
+      initMiniSprite(canvas, status);
+    }
+  });
 }
 
 // -----------------------------------------------------------------------
@@ -132,6 +178,11 @@ function updateTaskCard(task) {
   const card = document.getElementById(`task-card-${task.id}`);
   if (card) {
     card.outerHTML = renderTaskCard(task);
+    // Re-init sprite for the replaced card
+    const newCanvas = document.getElementById(`sprite-${task.id}`);
+    if (newCanvas && typeof initMiniSprite === 'function') {
+      initMiniSprite(newCanvas, newCanvas.dataset.status || 'IDLE');
+    }
   } else {
     // Task not in DOM yet — reload
     loadTasks();
@@ -201,4 +252,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Expose
-window.trackerUI = { loadTasks, renderTaskCard, handleWsEvent };
+window.trackerUI = { loadTasks, renderTaskCard, handleWsEvent, initTaskSprites };

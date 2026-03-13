@@ -100,6 +100,9 @@ class AgentInstance(BaseModel):
     pixel_position: dict[str, int] = Field(default_factory=lambda: {"x": 0, "y": 0})
     animation_state: str = "idle"
     skills: list[AgentSkill]
+    parent_instance_id: str | None = None  # for sub-agents
+    is_subagent: bool = False
+    depth: int = 0  # nesting level
 
 
 class RouterRequest(BaseModel):
@@ -113,3 +116,17 @@ class RouterResponse(BaseModel):
     confidence: float = Field(ge=0.0, le=1.0)
     reasoning: str
     alternatives: list[MarketplaceAgent]
+
+
+class SkillDefinition(BaseModel):
+    id: str
+    name: str
+    description: str
+    category: str
+    auto_invoke_pattern: str | None = None
+    compatible_agents: list[str]
+    prompt_template: str
+    source_repo: str
+    installs: int
+    tags: list[str]
+    created_at: datetime

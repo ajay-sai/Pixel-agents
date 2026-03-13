@@ -94,3 +94,55 @@ def test_task_events_bounded(t: AgentTracker) -> None:
         t.add_task_event(task.id, "working", f"Step {i}")
 
     assert len(t.tasks[task.id].events) <= 50
+
+
+def test_spawn_subagent(t: AgentTracker) -> None:
+    """spawn_subagent creates a child instance linked to the parent."""
+    task_parent = t.create_task("Parent task", "Orchestrate subtasks", [AgentSkill.CODE_GENERATION])
+    parent_inst = t.hire_agent("agent-012", task_parent.id)
+    assert parent_inst is not None
+
+    task_child = t.create_task("Child task", "Run tests", [AgentSkill.TESTING])
+    sub = t.spawn_subagent(parent_inst.id, "agent-009", task_child.id)
+
+    assert sub is not None
+    assert sub.is_subagent is True
+    assert sub.parent_instance_id == parent_inst.id
+    assert sub.depth == parent_inst.depth + 1
+    assert sub.current_task_id == task_child.id
+    assert t.tasks[task_child.id].status == TaskStatus.IN_PROGRESS
+
+
+def test_spawn_subagent_unknown_parent(t: AgentTracker) -> None:
+    task = t.create_task("Orphan task", "No parent", [AgentSkill.TESTING])
+    result = t.spawn_subagent("inst-nonexistent", "agent-009", task.id)
+    assert result is None
+
+
+def test_spawn_subagent_unknown_task(t: AgentTracker) -> None:
+    task = t.create_task("Parent task", "Orchestrate", [AgentSkill.CODE_GENERATION])
+    parent = t.hire_agent("agent-012", task.id)
+    assert parent is not None
+    result = t.spawn_subagent(parent.id, "agent-009", "task-nonexistent")
+    assert result is None
+
+
+def test_prepopulate_includes_subagents() -> None:
+    """Default prepopulated tracker should have at least 1 sub-agent."""
+    populated = AgentTracker(prepopulate=True)
+    subagents = [i for i in populated.agent_instances.values() if i.is_subagent]
+    assert len(subagents) >= 1, "Expected at least 1 pre-populated sub-agent"
+    sub = subagents[0]
+    assert sub.parent_instance_id is not None
+    assert sub.depth == 1
+    assert sub.parent_instance_id in populated.agent_instances
+
+
+def test_agent_instance_has_subagent_fields(t: AgentTracker) -> None:
+    """AgentInstance model should carry parent/subagent metadata."""
+    task = t.create_task("Test fields", "Verify model", [AgentSkill.TESTING])
+    inst = t.hire_agent("agent-001", task.id)
+    assert inst is not None
+    assert inst.parent_instance_id is None
+    assert inst.is_subagent is False
+    assert inst.depth == 0
