@@ -68,7 +68,7 @@ npm run lint   # Run ESLint
 
 ## Architecture
 
-- **Next.js 14** with App Router
+- **Next.js 15** with App Router
 - **TypeScript** with strict mode
 - **Tailwind CSS** with pixel art theme
 - **In-memory store** (lib/store.ts) for agent/task state
