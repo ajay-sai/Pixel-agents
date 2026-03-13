@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pokémon-Quality Pixel Agent Sprites Demo</title>
+<style>
+body { background: #0a0d14; color: #e0e0e0; font-family: 'Press Start 2P', monospace; text-align: center; padding: 20px; }
+h1 { color: #00ff41; text-shadow: 0 0 10px #00ff41; font-size: 14px; margin-bottom: 8px; }
+h2 { color: #00bbff; font-size: 10px; margin-bottom: 24px; }
+.grid { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin: 20px 0; }
+.sprite-box { background: #111827; border: 2px solid #2a3f5f; padding: 12px; border-radius: 4px; }
+.sprite-box canvas { display: block; margin: 0 auto 8px; image-rendering: pixelated; }
+.sprite-box p { color: #00ff88; font-size: 7px; margin: 4px 0; }
+.sprite-box small { color: #8899aa; font-size: 6px; }
+.skills { margin: 20px; }
+.skill-tag { background: #1a2332; border: 1px solid #00ff41; padding: 4px 8px; border-radius: 2px; font-size: 7px; color: #00ff41; margin: 3px; display: inline-block; }
+.skill-tag.superpowers { border-color: #aa44ff; color: #cc88ff; }
+</style>
+</head>
+<body>
+<h1>🎮 PIXEL AGENTS — POKÉMON-QUALITY SPRITES</h1>
+<h2>Canvas-rendered, per-agent-type, multi-color, animated</h2>
+
+<div class="grid" id="sprite-grid"></div>
+
+<div class="skills">
+  <p style="color:#00bbff;font-size:8px;margin-bottom:12px;">✅ 21 SKILLS LOADED (including 9 new Superpowers skills):</p>
+  <span class="skill-tag">Frontend Design</span>
+  <span class="skill-tag">Code Review</span>
+  <span class="skill-tag">Security Audit</span>
+  <span class="skill-tag">API Design</span>
+  <span class="skill-tag">Test Automation</span>
+  <span class="skill-tag">Performance</span>
+  <span class="skill-tag">Data Pipeline</span>
+  <span class="skill-tag">Docs & Writing</span>
+  <span class="skill-tag">DevOps CI/CD</span>
+  <span class="skill-tag">Multi-Agent</span>
+  <span class="skill-tag">PR Review</span>
+  <span class="skill-tag">Conventional Commits</span>
+  <br>
+  <span class="skill-tag superpowers">⚡ Brainstorming</span>
+  <span class="skill-tag superpowers">⚡ TDD</span>
+  <span class="skill-tag superpowers">⚡ Systematic Debugging</span>
+  <span class="skill-tag superpowers">⚡ Writing Plans</span>
+  <span class="skill-tag superpowers">⚡ Subagent-Driven Dev</span>
+  <span class="skill-tag superpowers">⚡ Code Review</span>
+  <span class="skill-tag superpowers">⚡ Finish Branch</span>
+  <span class="skill-tag superpowers">⚡ Parallel Agents</span>
+  <span class="skill-tag superpowers">⚡ Git Worktrees</span>
+</div>
+
+<script>
+// Sprite palette definitions
+const PALETTES = {
+  coder:      { out:'#001a08', drk:'#004411', mid:'#00cc33', lit:'#88ffaa', skn:'#c8eec8', eye:'#00ffff', acc:'#00ff41' },
+  debugger:   { out:'#1a0000', drk:'#550000', mid:'#cc2222', lit:'#ff9988', skn:'#ffe0d8', eye:'#ffff44', acc:'#ff8800' },
+  researcher: { out:'#001a1a', drk:'#004444', mid:'#00aaaa', lit:'#88ffff', skn:'#ccf5f5', eye:'#0088ff', acc:'#ff00cc' },
+  architect:  { out:'#1a0a00', drk:'#553300', mid:'#cc6600', lit:'#ffcc88', skn:'#ffe8cc', eye:'#ffff00', acc:'#ffcc00' },
+  tester:     { out:'#1a1a00', drk:'#555500', mid:'#aaaa00', lit:'#ffff88', skn:'#fffff0', eye:'#00ff88', acc:'#00ffff' },
+  devops:     { out:'#0d0022', drk:'#330066', mid:'#8822cc', lit:'#cc88ff', skn:'#e8d0ff', eye:'#ffff00', acc:'#ff00ff' },
+  designer:   { out:'#1a001a', drk:'#550055', mid:'#cc00cc', lit:'#ff88ff', skn:'#ffd8ff', eye:'#00ffff', acc:'#ffff00' },
+  analyst:    { out:'#00111a', drk:'#002244', mid:'#2288cc', lit:'#88ccff', skn:'#d0e8ff', eye:'#ffff44', acc:'#00ffff' },
+};
+
+const AGENTS = [
+  { type:'coder',      name:'CodeBot',    role:'Coder',       skill:'CODE_GENERATION' },
+  { type:'debugger',   name:'BugHunter',  role:'Debugger',    skill:'DEBUGGING' },
+  { type:'researcher', name:'DataMind',   role:'Researcher',  skill:'RESEARCH' },
+  { type:'architect',  name:'SysForge',   role:'Architect',   skill:'CODE_REVIEW' },
+  { type:'tester',     name:'QADroid',    role:'Tester',      skill:'TESTING' },
+  { type:'devops',     name:'PipeBot',    role:'DevOps',      skill:'DEVOPS' },
+  { type:'designer',   name:'PixelCraft', role:'Designer',    skill:'FRONTEND' },
+  { type:'analyst',    name:'DataLens',   role:'Analyst',     skill:'DATA_ANALYSIS' },
+];
+
+function px(ctx, x, y, w, h, color, s) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x*s), Math.round(y*s), Math.round(w*s), Math.round(h*s));
+}
+
+function drawSprite(ctx, type, frame, W, H) {
+  ctx.clearRect(0, 0, W, H);
+  const grad = ctx.createRadialGradient(W/2, H/2, 1, W/2, H/2, W*0.7);
+  grad.addColorStop(0, '#1a2a3a');
+  grad.addColorStop(1, '#080c14');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  const p = PALETTES[type] || PALETTES.coder;
+  const s = W / 20;
+  const bob = Math.sin(frame * 0.07) * 0.8;
+
+  ctx.save();
+  ctx.translate(W/2, H*0.8);
+
+  // Torso
+  px(ctx,-4,-8+bob,8,8,p.out,s); px(ctx,-3,-7+bob,6,6,p.mid,s);
+  px(ctx,-3,-7+bob,3,2,p.lit,s); px(ctx,-3,-3+bob,6,2,p.drk,s);
+  px(ctx,-2,0+bob,4,1,p.acc,s);
+
+  // Legs
+  px(ctx,-4,1+bob,3,5,p.out,s); px(ctx,1,1+bob,3,5,p.out,s);
+  px(ctx,-3,1+bob,2,4,p.drk,s); px(ctx,2,1+bob,2,4,p.drk,s);
+  px(ctx,-4,6+bob,4,2,p.out,s); px(ctx,0,6+bob,4,2,p.out,s);
+  px(ctx,-3,6+bob,3,1,p.mid,s); px(ctx,1,6+bob,3,1,p.mid,s);
+
+  // Arms
+  const armSwing = Math.sin(frame * 0.3) * 1.5;
+  px(ctx,-6,-7+bob+armSwing,2,5,p.out,s); px(ctx,-5,-6+bob+armSwing,1,4,p.mid,s);
+  px(ctx,4,-7+bob-armSwing,2,5,p.out,s); px(ctx,4,-6+bob-armSwing,1,4,p.mid,s);
+
+  // Head
+  px(ctx,-3,-14+bob,6,7,p.out,s); px(ctx,-2,-13+bob,4,5,p.skn,s);
+  px(ctx,-2,-13+bob,2,2,p.lit,s);
+  px(ctx,-1.5,-11+bob,1,1,p.eye,s); px(ctx,0.5,-11+bob,1,1,p.eye,s);
+  px(ctx,-1,-10+bob,3,1,p.out,s);
+
+  if (type==='coder') {
+    px(ctx,-0.5,-17+bob,1,2,p.acc,s); px(ctx,-0.5,-18+bob,1,1,p.eye,s);
+    px(ctx,-3,-12+bob,6,2,p.eye,s); px(ctx,-3,-12+bob,6,1,p.out,s);
+    px(ctx,-2,-5+bob,1,1,p.acc,s); px(ctx,1,-5+bob,1,1,p.acc,s);
+    px(ctx,-3,-3+bob,2,1,p.acc,s); px(ctx,1,-3+bob,2,1,p.acc,s);
+  } else if (type==='debugger') {
+    px(ctx,-4,-18+bob,8,1,p.out,s); px(ctx,-2,-21+bob,4,3,p.out,s);
+    px(ctx,-1,-20+bob,3,2,p.mid,s); px(ctx,-4,-17+bob,8,1,p.drk,s);
+    px(ctx,-2,-12+bob,2,1,p.out,s); px(ctx,1,-12+bob,2,1,p.out,s);
+    px(ctx,1,-5+bob,3,3,p.out,s);
+    px(ctx,1,-5+bob,2,2,'rgba(100,200,255,0.5)',s);
+  } else if (type==='researcher') {
+    px(ctx,-3,-18+bob,6,1,p.out,s); px(ctx,-1,-22+bob,2,4,p.out,s);
+    px(ctx,-0.5,-21+bob,1,3,p.mid,s); px(ctx,-0.5,-22+bob,1,1,p.acc,s);
+    px(ctx,-3,-12+bob,2,2,p.out,s); px(ctx,1,-12+bob,2,2,p.out,s);
+    px(ctx,-2,-12+bob,1,1,'rgba(180,220,255,0.5)',s);
+    px(ctx,1,-12+bob,1,1,'rgba(180,220,255,0.5)',s);
+    px(ctx,-1,-5+bob,3,1,p.acc,s); px(ctx,0,-6+bob,1,3,p.acc,s);
+  } else if (type==='architect') {
+    px(ctx,-4,-18+bob,8,1,p.out,s); px(ctx,-3,-21+bob,6,3,p.out,s);
+    px(ctx,-2,-20+bob,4,2,p.mid,s); px(ctx,-4,-17+bob,8,2,p.drk,s);
+    px(ctx,-2,-7+bob,4,5,p.out,s); px(ctx,-1,-6+bob,3,4,p.acc,s);
+    px(ctx,-1,-4+bob,3,1,p.lit,s); px(ctx,0,-6+bob,1,4,p.lit,s);
+  } else if (type==='tester') {
+    px(ctx,-3,-15+bob,3,2,p.out,s); px(ctx,0,-15+bob,3,2,p.out,s);
+    px(ctx,-2,-15+bob,2,1,p.eye,s); px(ctx,1,-15+bob,2,1,p.eye,s);
+    px(ctx,4,-6+bob,4,5,p.out,s);
+    px(ctx,5,-5+bob,3,4,'rgba(220,240,255,0.7)',s);
+    px(ctx,6,-3+bob,1,3,p.acc,s);
+  } else if (type==='devops') {
+    px(ctx,-4,-18+bob,8,1,p.out,s); px(ctx,-2,-21+bob,4,3,p.out,s);
+    px(ctx,-1,-20+bob,3,2,p.mid,s); px(ctx,0,-21+bob,1,1,p.acc,s);
+    px(ctx,-1,-6+bob,3,3,p.out,s); px(ctx,0,-5+bob,1,1,p.lit,s);
+    px(ctx,-1,-5+bob,1,1,p.acc,s); px(ctx,1,-5+bob,1,1,p.acc,s); px(ctx,0,-4+bob,1,1,p.acc,s);
+  } else if (type==='designer') {
+    px(ctx,-4,-18+bob,8,2,p.out,s); px(ctx,-3,-19+bob,6,2,p.mid,s);
+    px(ctx,-3,-19+bob,3,1,p.lit,s); px(ctx,2,-20+bob,1,2,p.acc,s);
+    px(ctx,-2,-7+bob,5,4,p.out,s);
+    px(ctx,-2,-6+bob,2,2,'#ff4444',s); px(ctx,0,-6+bob,2,2,'#ffaa00',s);
+    px(ctx,-2,-4+bob,2,1,'#00ff88',s); px(ctx,0,-4+bob,2,1,'#00aaff',s);
+    px(ctx,4,-7+bob,2,2,p.acc,s); px(ctx,4,-5+bob,1,5,p.mid,s);
+  } else if (type==='analyst') {
+    px(ctx,-3,-13+bob,3,2,p.out,s); px(ctx,0,-13+bob,3,2,p.out,s);
+    px(ctx,-2,-12+bob,1,1,'rgba(150,200,255,0.5)',s);
+    px(ctx,1,-12+bob,1,1,'rgba(150,200,255,0.5)',s);
+    px(ctx,-1,-12+bob,2,1,p.out,s);
+    px(ctx,-2,-7+bob,5,5,p.out,s); px(ctx,-1,-6+bob,4,4,'#0a1520',s);
+    px(ctx,-1,-3+bob,1,3,p.acc,s); px(ctx,0,-4+bob,1,4,p.mid,s);
+    px(ctx,1,-2+bob,1,2,p.eye,s); px(ctx,2,-5+bob,1,5,p.lit,s);
+  }
+
+  ctx.restore();
+}
+
+// Build grid
+const grid = document.getElementById('sprite-grid');
+const canvases = [];
+
+AGENTS.forEach(agent => {
+  const box = document.createElement('div');
+  box.className = 'sprite-box';
+  const canvas = document.createElement('canvas');
+  canvas.width = 80; canvas.height = 80;
+  canvas.style.imageRendering = 'pixelated';
+  box.appendChild(canvas);
+  const name = document.createElement('p');
+  name.textContent = agent.name;
+  box.appendChild(name);
+  const role = document.createElement('small');
+  role.textContent = agent.role;
+  box.appendChild(role);
+  grid.appendChild(box);
+  canvases.push({ canvas, type: agent.type });
+});
+
+let frame = 0;
+function animate() {
+  frame++;
+  canvases.forEach(({ canvas, type }) => {
+    const ctx = canvas.getContext('2d');
+    drawSprite(ctx, type, frame, canvas.width, canvas.height);
+  });
+  requestAnimationFrame(animate);
+}
+animate();
+</script>
+</body>
+</html>

@@ -216,3 +216,4 @@ out/
 build/
 .env*.local
 npm-debug.log*
+tsconfig.tsbuildinfo
