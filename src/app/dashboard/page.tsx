@@ -27,7 +27,7 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [refresh]);
 
-  function handleTaskSubmit(_desc: string, _hired: Agent[]) {
+  function handleTaskSubmit() {
     setTimeout(refresh, 500);
   }
 

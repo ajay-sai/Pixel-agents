@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { Agent } from '@/types';
 
 interface TaskPanelProps {
-  onTaskSubmit: (description: string, agents: Agent[]) => void;
+  onTaskSubmit: () => void;
 }
 
 export default function TaskPanel({ onTaskSubmit }: TaskPanelProps) {
@@ -24,7 +24,8 @@ export default function TaskPanel({ onTaskSubmit }: TaskPanelProps) {
       });
       const data = await res.json();
       setAutoHired(data.agents || []);
-    } catch {
+    } catch (err) {
+      console.error('Auto-hire error:', err);
       setError('Auto-hire failed');
     } finally {
       setLoading(false);
@@ -51,10 +52,11 @@ export default function TaskPanel({ onTaskSubmit }: TaskPanelProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ description, agentIds: autoHired.map(a => a.id) }),
       });
-      onTaskSubmit(description, autoHired);
+      onTaskSubmit();
       setDescription('');
       setAutoHired([]);
-    } catch {
+    } catch (err) {
+      console.error('Task submission error:', err);
       setError('Task creation failed');
     } finally {
       setLoading(false);

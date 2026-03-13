@@ -15,7 +15,8 @@ export default function MarketplacePage() {
   useEffect(() => {
     fetch('/api/agents')
       .then(r => r.json())
-      .then(data => { setAgents(data); setLoading(false); });
+      .then(data => { setAgents(data); setLoading(false); })
+      .catch(err => { console.error('Failed to load agents:', err); setLoading(false); });
   }, []);
 
   async function handleHire(agent: Agent) {
