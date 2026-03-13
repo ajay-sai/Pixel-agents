@@ -39,6 +39,69 @@ const PAL = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Pokémon-Quality Sprite Color Palettes per agent type
+// Each palette has: outline, dark, mid, light, skin, eye, accent, hair
+// ─────────────────────────────────────────────────────────────────────────────
+const SPRITE_PALETTES = {
+  coder:      { out:'#001a08', drk:'#004411', mid:'#00cc33', lit:'#88ffaa', skn:'#c8eec8', eye:'#00ffff', acc:'#00ff41', hai:'#005522' },
+  debugger:   { out:'#1a0000', drk:'#550000', mid:'#cc2222', lit:'#ff9988', skn:'#ffe0d8', eye:'#ffff44', acc:'#ff8800', hai:'#220000' },
+  researcher: { out:'#001a1a', drk:'#004444', mid:'#00aaaa', lit:'#88ffff', skn:'#ccf5f5', eye:'#0088ff', acc:'#ff00cc', hai:'#003366' },
+  architect:  { out:'#1a0a00', drk:'#553300', mid:'#cc6600', lit:'#ffcc88', skn:'#ffe8cc', eye:'#ffff00', acc:'#ffcc00', hai:'#441100' },
+  tester:     { out:'#1a1a00', drk:'#555500', mid:'#aaaa00', lit:'#ffff88', skn:'#fffff0', eye:'#00ff88', acc:'#00ffff', hai:'#333300' },
+  devops:     { out:'#0d0022', drk:'#330066', mid:'#8822cc', lit:'#cc88ff', skn:'#e8d0ff', eye:'#ffff00', acc:'#ff00ff', hai:'#220044' },
+  designer:   { out:'#1a001a', drk:'#550055', mid:'#cc00cc', lit:'#ff88ff', skn:'#ffd8ff', eye:'#00ffff', acc:'#ffff00', hai:'#440033' },
+  analyst:    { out:'#00111a', drk:'#002244', mid:'#2288cc', lit:'#88ccff', skn:'#d0e8ff', eye:'#ffff44', acc:'#00ffff', hai:'#001133' },
+};
+
+// Map primary skill to character type
+const SKILL_TO_CHAR = {
+  CODE_GENERATION:'coder',   BACKEND:'coder',   FRONTEND:'designer',
+  CODE_REVIEW:'architect',   DEBUGGING:'debugger', SECURITY:'debugger',
+  TESTING:'tester',          DEVOPS:'devops',   DOCUMENTATION:'researcher',
+  RESEARCH:'researcher',     DATA_ANALYSIS:'analyst', WRITING:'researcher',
+};
+
+function _charType(agent) {
+  const sk = (agent.skills || [])[0];
+  if (sk && SKILL_TO_CHAR[sk]) return SKILL_TO_CHAR[sk];
+  // fallback by name keyword
+  const n = (agent.name || '').toLowerCase();
+  if (n.includes('code') || n.includes('bot'))    return 'coder';
+  if (n.includes('debug') || n.includes('bug'))   return 'debugger';
+  if (n.includes('data') || n.includes('mind'))   return 'researcher';
+  if (n.includes('forge') || n.includes('arch'))  return 'architect';
+  if (n.includes('qa') || n.includes('test'))     return 'tester';
+  if (n.includes('pipe') || n.includes('ops'))    return 'devops';
+  if (n.includes('craft') || n.includes('design'))return 'designer';
+  if (n.includes('lens') || n.includes('anal'))   return 'analyst';
+  return 'coder';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Sprite color helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function _hexDark(hex, f) {
+  const n = parseInt(hex.replace('#',''), 16);
+  const r = Math.max(0, Math.floor(((n>>16)&255)*(1-f)));
+  const g = Math.max(0, Math.floor(((n>>8)&255)*(1-f)));
+  const b = Math.max(0, Math.floor((n&255)*(1-f)));
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+function _hexLight(hex, f) {
+  const n = parseInt(hex.replace('#',''), 16);
+  const r = Math.min(255, Math.floor(((n>>16)&255)+(255-((n>>16)&255))*f));
+  const g = Math.min(255, Math.floor(((n>>8)&255)+(255-((n>>8)&255))*f));
+  const b = Math.min(255, Math.floor((n&255)+(255-(n&255))*f));
+  return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
+}
+
+// Draw a logical pixel block at grid coords (each unit = s canvas pixels)
+function _px(ctx, x, y, w, h, color, s) {
+  ctx.fillStyle = color;
+  ctx.fillRect(Math.round(x*s), Math.round(y*s), Math.round(w*s), Math.round(h*s));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Helper: draw a single pixel-art desk (20×12 px rect + keyboard dots)
 // ─────────────────────────────────────────────────────────────────────────────
 function drawDesk(ctx, x, y) {
@@ -108,78 +171,327 @@ function drawLabTable(ctx, x, y, w) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Helper: draw a pixel-art character sprite (12×16 logical pixels, scale=2)
+// POKÉMON-QUALITY PIXEL CHARACTER RENDERER
+// Coordinate origin: character anchor (approx. waist). Logical pixel grid.
+// Each logical unit = `scale` canvas pixels.
+// Sprite bounds: ~12 wide × 24 tall.  Head top: y=-14  Feet bottom: y=+10
 // ─────────────────────────────────────────────────────────────────────────────
-function drawPixelChar(ctx, cx, cy, statusColor, animState, frame, scale, isSubagent) {
-  const s = scale;
-  // offset for animations
-  let ox = 0, oy = 0, opacity = 1;
-  if (animState === 'idle') {
-    oy = Math.sin(frame * 0.05) * 1;
-  } else if (animState === 'complete') {
-    oy = -Math.abs(Math.sin(frame * 0.15)) * 4;
-  } else if (animState === 'error') {
-    ox = Math.sin(frame * 0.3) * 2;
-  } else if (animState === 'waiting') {
-    opacity = 0.5 + 0.5 * Math.sin(frame * 0.08);
+
+// ── Shared body base ────────────────────────────────────────────────────────
+function _drawCharBase(ctx, s, p, animState, frame) {
+  const working = animState === 'working';
+  const bob     = animState === 'idle'     ? Math.sin(frame*0.07)*0.8 : 0;
+  const bodyY   = -8 + bob;
+
+  // TORSO outline + fill
+  _px(ctx, -4, bodyY,      8, 8, p.out, s);
+  _px(ctx, -3, bodyY+1,    6, 6, p.mid, s);
+  _px(ctx, -3, bodyY+1,    3, 2, p.lit, s);   // highlight TL
+  _px(ctx, -3, bodyY+5,    6, 2, p.drk, s);   // shadow bottom
+
+  // BELT line
+  _px(ctx, -3, bodyY+7, 6, 1, p.out, s);
+  _px(ctx, -2, bodyY+7, 4, 1, p.acc, s);
+
+  // LEGS
+  const legWalk = working ? Math.sin(frame*0.25)*1.5 : 0;
+  // left leg
+  _px(ctx, -4, 1+bob,    3, 6, p.out, s);
+  _px(ctx, -3, 1+bob,    2, 5, p.drk, s);
+  _px(ctx, -3, 1+bob,    1, 2, p.mid, s);
+  // right leg
+  _px(ctx,  1, 1+bob,    3, 6, p.out, s);
+  _px(ctx,  2, 1+bob,    2, 5, p.drk, s);
+  _px(ctx,  2, 1+bob,    1, 2, p.mid, s);
+  // leg walk anim
+  if (working) {
+    _px(ctx, -3, 1+legWalk,  2, 5, p.drk, s);
+    _px(ctx,  2, 1-legWalk,  2, 5, p.drk, s);
   }
+  // FEET
+  _px(ctx, -4, 7+bob, 4, 3, p.out, s);
+  _px(ctx,  0, 7+bob, 4, 3, p.out, s);
+  _px(ctx, -3, 7+bob, 3, 2, p.mid, s);
+  _px(ctx,  1, 7+bob, 3, 2, p.mid, s);
+
+  // ARMS
+  const armL = working ? Math.sin(frame*0.3)*2  :  1;
+  const armR = working ? -Math.sin(frame*0.3)*2 :  1;
+  // left arm
+  _px(ctx, -6, bodyY+armL,   2, 5, p.out, s);
+  _px(ctx, -5, bodyY+armL+0.5, 1, 3, p.mid, s);
+  // right arm
+  _px(ctx,  4, bodyY+armR,   2, 5, p.out, s);
+  _px(ctx,  4, bodyY+armR+0.5, 1, 3, p.mid, s);
+  // hands
+  _px(ctx, -5.5, bodyY+armL+4, 2, 2, p.skn, s);
+  _px(ctx,  3.5, bodyY+armR+4, 2, 2, p.skn, s);
+}
+
+// ── HEAD base (shared) ─────────────────────────────────────────────────────
+function _drawCharHead(ctx, s, p, animState, frame) {
+  const bob = animState === 'idle' ? Math.sin(frame*0.07)*0.8 : 0;
+  const headY = -14 + bob;
+  // Head outline + fill
+  _px(ctx, -3, headY,   6, 7, p.out, s);
+  _px(ctx, -2, headY+1, 4, 5, p.skn, s);
+  _px(ctx, -2, headY+1, 2, 2, _hexLight(p.skn, 0.4), s); // forehead highlight
+  // NECK
+  _px(ctx, -1, headY+6, 2, 2, p.out, s);
+  _px(ctx, -1, headY+7, 2, 1, p.skn, s);
+  // EYES (2 dots)
+  _px(ctx, -2, headY+3, 1, 1, p.out, s);
+  _px(ctx,  1, headY+3, 1, 1, p.out, s);
+  _px(ctx, -1.5, headY+3, 1, 1, p.eye, s);
+  _px(ctx,  1.5, headY+3, 1, 1, p.eye, s);
+  // NOSE
+  _px(ctx, -0.5, headY+4, 1, 1, _hexDark(p.skn, 0.15), s);
+  // MOUTH
+  _px(ctx, -1, headY+5, 3, 1, p.out, s);
+}
+
+// ── Agent-specific overlays ────────────────────────────────────────────────
+function _overlay_coder(ctx, s, p, bob) {
+  // Robot antenna
+  _px(ctx, -0.5, -18+bob, 1, 2, p.acc, s);
+  _px(ctx, -1,   -19+bob, 2, 1, p.out, s);
+  _px(ctx, -0.5, -20+bob, 1, 1, p.eye, s);
+  // Visor bar replaces normal face
+  const headY = -14+bob;
+  _px(ctx, -2, headY+3, 4, 2, p.out, s);  // visor bg
+  _px(ctx, -1, headY+3, 3, 1, p.eye, s);  // visor glow
+  _px(ctx, -1, headY+4, 3, 1, _hexDark(p.eye, 0.3), s);
+  // Corner pixels (highlight on visor)
+  _px(ctx, -2, headY+3, 1, 1, _hexLight(p.eye, 0.5), s);
+  // Circuit board on chest
+  _px(ctx, -2, -6, 1, 1, p.acc, s); _px(ctx, 1, -6, 1, 1, p.acc, s);
+  _px(ctx, -3, -4, 2, 1, p.acc, s); _px(ctx, 1, -4, 2, 1, p.acc, s);
+  _px(ctx, 0, -5, 1, 2, _hexLight(p.acc, 0.3), s);
+}
+
+function _overlay_debugger(ctx, s, p, bob) {
+  // Detective deerstalker hat
+  _px(ctx, -3, -18+bob, 6, 1, p.out, s);
+  _px(ctx, -2, -21+bob, 4, 3, p.out, s);
+  _px(ctx, -1, -20+bob, 3, 2, p.mid, s);
+  _px(ctx, -1, -20+bob, 2, 1, p.lit, s);
+  _px(ctx, -4, -17+bob, 8, 1, p.out, s);
+  _px(ctx, -3, -17+bob, 6, 1, p.drk, s);
+  // Determined eyebrow
+  const headY = -14+bob;
+  _px(ctx, -2, headY+2, 2, 1, p.out, s);
+  _px(ctx,  1, headY+2, 2, 1, p.out, s);
+  // Magnifier on chest
+  _px(ctx, 1, -5, 3, 3, p.out, s);
+  _px(ctx, 1, -5, 2, 2, _hexLight(p.acc, 0.3), s);
+  _px(ctx, 2, -4, 1, 1, _hexLight('#ffffff', 0.6), s);
+  // Coat collar
+  _px(ctx, -3, -8, 1, 2, p.lit, s); _px(ctx, 2, -8, 1, 2, p.lit, s);
+}
+
+function _overlay_researcher(ctx, s, p, bob) {
+  // Tall wizard hat
+  _px(ctx, -3, -22+bob, 6, 1, p.out, s);  // brim
+  _px(ctx, -1, -27+bob, 2, 5, p.out, s);  // cone
+  _px(ctx, -0.5, -26+bob, 1, 4, p.mid, s);
+  _px(ctx, -1, -27+bob, 2, 1, p.acc, s);  // tip glow
+  // Glasses
+  const headY = -14+bob;
+  _px(ctx, -3, headY+3, 2, 2, p.out, s);
+  _px(ctx,  1, headY+3, 2, 2, p.out, s);
+  _px(ctx, -2, headY+3, 1, 1, _hexLight(p.eye, 0.4), s);
+  _px(ctx,  1, headY+3, 1, 1, _hexLight(p.eye, 0.4), s);
+  _px(ctx, -1, headY+4, 2, 1, p.out, s);  // glasses bridge
+  // Star on robe
+  _px(ctx, -1, -5, 3, 1, p.acc, s);
+  _px(ctx,  0, -6, 1, 3, p.acc, s);
+  // Book in left hand
+  _px(ctx, -7, -5, 3, 4, p.out, s);
+  _px(ctx, -6, -4, 2, 3, p.acc, s);
+  _px(ctx, -6, -4, 1, 1, p.lit, s);
+}
+
+function _overlay_architect(ctx, s, p, bob) {
+  // Hard hat
+  _px(ctx, -4, -17+bob, 8, 1, p.out, s);
+  _px(ctx, -3, -20+bob, 6, 3, p.out, s);
+  _px(ctx, -2, -19+bob, 4, 2, p.mid, s);
+  _px(ctx, -2, -19+bob, 2, 1, p.lit, s);
+  // Visor flap
+  _px(ctx, -4, -17+bob, 8, 2, p.drk, s);
+  _px(ctx, -3, -17+bob, 6, 1, _hexLight(p.mid, 0.3), s);
+  // Blueprint on chest
+  _px(ctx, -2, -7, 4, 5, p.out, s);
+  _px(ctx, -1, -6, 3, 4, p.acc, s);
+  _px(ctx, -1, -5, 3, 1, p.lit, s); // line
+  _px(ctx, -1, -3, 3, 1, p.lit, s); // line
+  _px(ctx,  0, -6, 1, 4, p.lit, s); // vertical line
+  // Strong brow
+  const headY = -14+bob;
+  _px(ctx, -2, headY+2, 2, 1, p.hai, s);
+  _px(ctx,  1, headY+2, 2, 1, p.hai, s);
+}
+
+function _overlay_tester(ctx, s, p, bob) {
+  // Lab goggles on forehead
+  const headY = -14+bob;
+  _px(ctx, -3, headY+1, 3, 2, p.out, s);
+  _px(ctx,  0, headY+1, 3, 2, p.out, s);
+  _px(ctx, -2, headY+1, 2, 1, p.eye, s);
+  _px(ctx,  1, headY+1, 2, 1, p.eye, s);
+  _px(ctx, -1, headY+2, 2, 1, p.out, s); // goggles bridge
+  // Clipboard in right hand
+  _px(ctx, 4, -6, 4, 5, p.out, s);
+  _px(ctx, 5, -5, 3, 4, p.lit, s);
+  _px(ctx, 5, -4, 3, 1, p.out, s); // check row
+  _px(ctx, 5, -2, 3, 1, p.out, s); // check row
+  _px(ctx, 6, -4, 1, 3, p.acc, s); // check mark
+  // Lab coat collar
+  _px(ctx, -3, -7, 6, 1, _hexLight(p.lit, 0.5), s);
+}
+
+function _overlay_devops(ctx, s, p, bob) {
+  // Engineer cap
+  _px(ctx, -3, -17+bob, 6, 1, p.out, s);
+  _px(ctx, -4, -17+bob, 8, 1, p.drk, s);
+  _px(ctx, -2, -20+bob, 4, 3, p.out, s);
+  _px(ctx, -1, -19+bob, 3, 2, p.mid, s);
+  _px(ctx, -1, -19+bob, 2, 1, p.lit, s);
+  _px(ctx,  0, -20+bob, 1, 1, p.acc, s); // logo on cap
+  // Gear icon on chest
+  _px(ctx, -1, -6, 3, 3, p.out, s);
+  _px(ctx,  0, -6, 1, 1, p.acc, s);
+  _px(ctx, -1, -5, 1, 1, p.acc, s);
+  _px(ctx,  1, -5, 1, 1, p.acc, s);
+  _px(ctx,  0, -4, 1, 1, p.acc, s);
+  _px(ctx,  0, -5, 1, 1, p.lit, s); // center
+  // Wrench in right hand
+  _px(ctx, 4, -5, 2, 6, p.out, s);
+  _px(ctx, 4, -5, 2, 2, p.acc, s); // wrench head
+  _px(ctx, 4, -5, 1, 1, p.lit, s);
+  _px(ctx, 4, -4, 1, 5, p.mid, s); // handle
+}
+
+function _overlay_designer(ctx, s, p, bob) {
+  // Artistic beret
+  _px(ctx, -3, -17+bob, 6, 2, p.out, s);
+  _px(ctx, -4, -19+bob, 8, 2, p.out, s);
+  _px(ctx, -3, -18+bob, 6, 2, p.mid, s);
+  _px(ctx, -3, -18+bob, 3, 1, p.lit, s);
+  _px(ctx,  2, -20+bob, 1, 2, p.acc, s); // beret pom
+  // Color palette on chest
+  _px(ctx, -2, -7, 5, 4, p.out, s);
+  _px(ctx, -2, -6, 2, 2, '#ff4444', s);
+  _px(ctx,  0, -6, 2, 2, '#ffaa00', s);
+  _px(ctx, -2, -4, 2, 1, '#00ff88', s);
+  _px(ctx,  0, -4, 2, 1, '#00aaff', s);
+  // Paintbrush in right hand
+  _px(ctx, 4, -7, 2, 7, p.out, s);
+  _px(ctx, 4, -7, 2, 2, p.acc, s); // brush head
+  _px(ctx, 4, -6, 1, 1, p.lit, s);
+  _px(ctx, 4, -5, 1, 5, p.mid, s); // handle
+  // Expressive eyebrow raised
+  const headY = -14+bob;
+  _px(ctx, -2, headY+2, 4, 1, p.hai, s);
+}
+
+function _overlay_analyst(ctx, s, p, bob) {
+  // Rectangular glasses (analytical)
+  const headY = -14+bob;
+  _px(ctx, -3, headY+2, 3, 3, p.out, s);
+  _px(ctx,  0, headY+2, 3, 3, p.out, s);
+  _px(ctx, -2, headY+3, 1, 1, _hexLight(p.eye, 0.5), s);
+  _px(ctx,  1, headY+3, 1, 1, _hexLight(p.eye, 0.5), s);
+  _px(ctx, -1, headY+3, 2, 1, p.out, s); // bridge
+  // Hair slicked back
+  _px(ctx, -2, headY, 4, 2, p.hai, s);
+  // Chart on chest
+  _px(ctx, -2, -7, 5, 5, p.out, s);
+  _px(ctx, -1, -6, 4, 4, '#0a1520', s);
+  _px(ctx, -1, -3, 1, 3, p.acc, s);  // bar 1
+  _px(ctx,  0, -4, 1, 4, p.mid, s);  // bar 2
+  _px(ctx,  1, -2, 1, 2, p.eye, s);  // bar 3
+  _px(ctx,  2, -5, 1, 5, p.lit, s);  // bar 4
+  // Briefcase in left hand
+  _px(ctx, -8, -5, 4, 4, p.out, s);
+  _px(ctx, -7, -4, 3, 3, p.drk, s);
+  _px(ctx, -7, -5, 3, 1, p.mid, s);
+  _px(ctx, -6, -5, 1, 1, p.lit, s); // clasp
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main entry: draw a Pokémon-quality pixel character
+// agentType: string key ('coder','debugger','researcher','architect',
+//            'tester','devops','designer','analyst')
+// ─────────────────────────────────────────────────────────────────────────────
+function drawPixelChar(ctx, cx, cy, agentType, statusColor, animState, frame, scale, isSubagent) {
+  const s = scale;
+  // Animation offsets
+  let ox = 0, oy = 0, opacity = 1;
+  if (animState === 'idle')     { oy = Math.sin(frame*0.07)*s; }
+  if (animState === 'complete') { oy = -Math.abs(Math.sin(frame*0.18))*5*s; }
+  if (animState === 'error')    { ox = Math.sin(frame*0.35)*2*s; }
+  if (animState === 'waiting')  { opacity = 0.55+0.45*Math.sin(frame*0.09); }
 
   ctx.save();
   ctx.globalAlpha = opacity;
   ctx.translate(cx + ox, cy + oy);
 
-  const headColor = statusColor;
-  const bodyColor = statusColor;
+  const type = agentType || 'coder';
+  const p    = SPRITE_PALETTES[type] || SPRITE_PALETTES.coder;
+  const bob  = animState === 'idle' ? Math.sin(frame*0.07)*0.8 : 0;
 
-  // HEAD: 4×4 px block centered at top (each "px" = s actual pixels)
-  ctx.fillStyle = headColor;
-  ctx.fillRect(-2 * s, -8 * s, 4 * s, 4 * s);
+  // 1. Draw base body (torso, legs, feet, arms)
+  _drawCharBase(ctx, s, p, animState, frame);
 
-  // EYES: 2 dots in head
-  ctx.fillStyle = '#000011';
-  ctx.fillRect(-1 * s, -7 * s, 1 * s, 1 * s);
-  ctx.fillRect(1 * s,  -7 * s, 1 * s, 1 * s);
+  // 2. Draw head (face, eyes, mouth)
+  _drawCharHead(ctx, s, p, animState, frame);
 
-  // BODY: 4×6 block
-  const bodyY = animState === 'working' ? -4 * s - 1 : -4 * s;
-  ctx.fillStyle = bodyColor;
-  ctx.fillRect(-2 * s, bodyY, 4 * s, 6 * s);
+  // 3. Apply agent-type-specific overlay (hat, accessories, chest decoration)
+  const overlayFn = {
+    coder:      _overlay_coder,
+    debugger:   _overlay_debugger,
+    researcher: _overlay_researcher,
+    architect:  _overlay_architect,
+    tester:     _overlay_tester,
+    devops:     _overlay_devops,
+    designer:   _overlay_designer,
+    analyst:    _overlay_analyst,
+  }[type];
+  if (overlayFn) overlayFn(ctx, s, p, bob);
 
-  // ARMS: 1×3 on each side, animate when working
-  if (animState === 'working') {
-    const armSwing = Math.sin(frame * 0.3) * 2 * s;
-    ctx.fillStyle = headColor;
-    ctx.fillRect(-3 * s, bodyY + armSwing, 1 * s, 3 * s);
-    ctx.fillRect(2 * s, bodyY - armSwing, 1 * s, 3 * s);
-  } else {
-    ctx.fillStyle = headColor;
-    ctx.fillRect(-3 * s, bodyY + 1 * s, 1 * s, 3 * s);
-    ctx.fillRect(2 * s, bodyY + 1 * s, 1 * s, 3 * s);
-  }
-
-  // LEGS: 2 pairs of 2×2 blocks
-  const legY = bodyY + 6 * s;
-  ctx.fillStyle = bodyColor;
-  ctx.fillRect(-2 * s, legY, 2 * s, 2 * s);
-  ctx.fillRect(0,       legY, 2 * s, 2 * s);
-
-  // WAITING: speech bubble above
+  // 4. Status effects
   if (animState === 'waiting') {
-    ctx.fillStyle = 'rgba(255,255,100,0.8)';
-    ctx.beginPath();
-    ctx.arc(0, -12 * s, 4 * s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.font = `${3 * s}px monospace`;
+    // Speech bubble
+    _px(ctx, -4, -23, 8, 5, p.out, s);
+    _px(ctx, -3, -22, 6, 3, '#ffffcc', s);
+    _px(ctx, -1, -18, 2, 2, p.out, s);
+    _px(ctx,  0, -19, 1, 1, '#ffffcc', s);
+    ctx.fillStyle = '#333';
+    ctx.font = `${Math.round(3*s)}px monospace`;
     ctx.textAlign = 'center';
-    ctx.fillText('?', 0, -10 * s);
+    ctx.fillText('?', 0, Math.round(-19*s));
+  }
+  if (animState === 'complete') {
+    // Star burst
+    ctx.fillStyle = p.acc;
+    ctx.font = `${Math.round(4*s)}px monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText('★', Math.round(5*s), Math.round(-18*s));
+  }
+  if (animState === 'error') {
+    // Red flash dots
+    _px(ctx, -5, -16, 2, 2, '#ff4455', s);
+    _px(ctx,  3, -16, 2, 2, '#ff4455', s);
   }
 
-  // Sub-agent indicator: smaller frame
+  // 5. Sub-agent indicator
   if (isSubagent) {
-    ctx.strokeStyle = 'rgba(255,255,0,0.6)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(-3 * s, -9 * s, 6 * s, 12 * s);
+    ctx.strokeStyle = 'rgba(255,255,0,0.7)';
+    ctx.lineWidth = Math.max(1, 0.5*s);
+    ctx.setLineDash([Math.round(2*s), Math.round(2*s)]);
+    ctx.strokeRect(Math.round(-6*s), Math.round(-20*s), Math.round(12*s), Math.round(30*s));
+    ctx.setLineDash([]);
   }
 
   ctx.restore();
@@ -424,7 +736,7 @@ class PixelCanvas {
       // Draw pixel character
       ctx.save();
       ctx.translate(x, y);
-      drawPixelChar(ctx, 0, 0, sc, animState, this.frame, scale, isSubagent);
+      drawPixelChar(ctx, 0, 0, _charType(a), sc, animState, this.frame, scale, isSubagent);
       ctx.restore();
 
       // Crown for parent agents (agents with children)
@@ -510,7 +822,7 @@ class PixelCanvas {
     this.detail.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:8px;">
         <div style="display:flex;align-items:center;gap:10px;">
-          <span style="font-size:1.8rem;">${a.character_sprite || '🤖'}</span>
+          <span style="font-size:1.8rem;">${_escHtml(a.character_sprite) || '🤖'}</span>
           <div>
             <div class="text-sm" style="color:${sc};">${_escHtml(a.name)}</div>
             <div class="text-xs text-dim">${_escHtml(a.agent_id)}</div>
@@ -600,7 +912,10 @@ function drawMiniSprite(ctx, status, frame) {
 
   ctx.save();
   ctx.translate(W / 2, H * 0.62);
-  drawPixelChar(ctx, 0, 0, sc, animState, frame, 1.5, false);
+  // Cycle through agent types for mini sprites (varied for visual interest)
+  const types = ['coder','debugger','researcher','architect','tester','devops','designer','analyst'];
+  const miniType = types[Math.floor(_miniFrame / 1800) % types.length];
+  drawPixelChar(ctx, 0, 0, miniType, sc, animState, frame, 1.5, false);
   ctx.restore();
 }
 

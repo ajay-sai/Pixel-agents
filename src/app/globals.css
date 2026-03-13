@@ -115,3 +115,37 @@ body {
 .glow-green { text-shadow: 0 0 10px var(--pixel-green); }
 .glow-pink { text-shadow: 0 0 10px var(--pixel-pink); }
 .glow-cyan { text-shadow: 0 0 10px var(--pixel-cyan); }
+
+/* ── Pokémon-quality sprite canvas styling ── */
+canvas[title] { cursor: pointer; }
+.pixel-sprite-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: inline-block;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(0,255,65,0.2), 2px 2px 0 #000;
+}
+.pixel-sprite-canvas:hover {
+  box-shadow: 0 0 16px rgba(0,255,65,0.5), 2px 2px 0 #000;
+}
+
+@keyframes pokemon-bounce {
+  0%,100% { transform: translateY(0) scaleY(1); }
+  40%      { transform: translateY(-6px) scaleY(1.05); }
+  60%      { transform: translateY(-6px) scaleY(1.05); }
+  80%      { transform: translateY(0) scaleY(0.95); }
+}
+@keyframes pokemon-shake {
+  0%,100% { transform: translateX(0); }
+  20%     { transform: translateX(-4px); }
+  40%     { transform: translateX(4px); }
+  60%     { transform: translateX(-4px); }
+  80%     { transform: translateX(4px); }
+}
+@keyframes status-glow {
+  0%,100% { box-shadow: 0 0 6px currentColor; }
+  50%     { box-shadow: 0 0 18px currentColor, 0 0 36px currentColor; }
+}
+.animate-pokemon-bounce { animation: pokemon-bounce 0.6s ease-in-out; }
+.animate-pokemon-shake  { animation: pokemon-shake 0.5s ease-in-out; }
+.animate-status-glow    { animation: status-glow 2s ease-in-out infinite; }

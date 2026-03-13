@@ -24,7 +24,7 @@ export default function AgentCard({ agent, onHire, hired }: AgentCardProps) {
           <div className="text-xs mb-2" style={{ color: agent.color }}>{agent.name}</div>
           <div className="text-xs text-gray-400">{agent.type}</div>
         </div>
-        <PixelSprite agent={agent} size={8} animated={agent.status === 'working'} />
+        <PixelSprite agent={agent} size={56} animated={agent.status === 'working'} />
       </div>
 
       <p className="text-xs text-gray-400 leading-relaxed" style={{ fontSize: '8px' }}>{agent.description}</p>
