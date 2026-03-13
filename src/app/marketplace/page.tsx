@@ -25,7 +25,7 @@ export default function MarketplacePage() {
       body: JSON.stringify({ agentId: agent.id }),
     });
     if (res.ok) {
-      setHiredIds(prev => new Set(Array.from(prev).concat(agent.id)));
+      setHiredIds(prev => new Set(prev).add(agent.id));
       setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: 'hired' } : a));
     }
   }

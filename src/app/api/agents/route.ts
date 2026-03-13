@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStore, updateStore } from '@/lib/store';
+import type { Agent } from '@/types';
 
 export async function GET() {
   const store = getStore();
@@ -8,7 +9,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const { agentId } = await req.json();
-  let hired: import('@/types').Agent | undefined = undefined;
+  let hired: Agent | undefined = undefined;
   updateStore(store => {
     const agent = store.agents.find(a => a.id === agentId);
     if (agent && agent.status === 'available') {
