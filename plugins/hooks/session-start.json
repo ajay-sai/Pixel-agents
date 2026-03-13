@@ -1,0 +1,17 @@
+{
+  "event": "session_start",
+  "description": "Show Pixel Market status and agent availability when Claude Code starts",
+  "actions": [
+    {
+      "type": "http_request",
+      "method": "GET",
+      "url": "http://localhost:8000/api/stats",
+      "on_success": {
+        "display": "🎮 Pixel Market: {total_agents} agents available | {active_tasks} active tasks | avg rating {avg_rating}★\n   Use /pixel-market:hire to auto-hire an agent for your task."
+      },
+      "on_error": {
+        "display": "🎮 Pixel Market is offline. Start the server: pixel-market"
+      }
+    }
+  ]
+}
