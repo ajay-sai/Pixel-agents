@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎮 Pixel Market — AI Agent Marketplace</title>
+  <link rel="stylesheet" href="/static/css/pixel.css" />
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<header class="app-header">
+  <div class="app-logo">🎮 Pixel Market</div>
+
+  <nav class="tab-nav" id="main-tabs">
+    <button class="tab-btn active" data-tab="marketplace">🏪 Marketplace</button>
+    <button class="tab-btn" data-tab="tracker">📡 Live Tracker</button>
+    <button class="tab-btn" data-tab="canvas">🖼️ Canvas View</button>
+    <button class="tab-btn" data-tab="autohire">🤖 Auto-Hire</button>
+  </nav>
+
+  <div style="margin-left:auto;display:flex;align-items:center;gap:10px;">
+    <span id="ws-status" class="text-sm" style="color:#ff4455;">● OFFLINE</span>
+  </div>
+</header>
+
+<!-- ===== STATS BAR ===== -->
+<div style="padding:12px 24px;">
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-item">
+      <span class="stat-value" id="stat-agents">--</span>
+      <span class="stat-label">Agents</span>
+    </div>
+    <div style="width:1px;height:32px;background:var(--border-dim);"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="stat-installs">--</span>
+      <span class="stat-label">Installs</span>
+    </div>
+    <div style="width:1px;height:32px;background:var(--border-dim);"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="stat-tasks">--</span>
+      <span class="stat-label">Active Tasks</span>
+    </div>
+    <div style="width:1px;height:32px;background:var(--border-dim);"></div>
+    <div class="stat-item">
+      <span class="stat-value" id="stat-rating">--</span>
+      <span class="stat-label">Avg Rating</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main style="padding:0 24px 32px;">
+
+  <!-- =========================================================
+       TAB 1: MARKETPLACE
+       ========================================================= -->
+  <div class="tab-panel active" id="tab-marketplace">
+    <!-- Search Row -->
+    <div class="flex gap-12 mb-16" style="flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:200px;">
+        <label class="text-sm text-dim" style="display:block;margin-bottom:6px;">SEARCH AGENTS</label>
+        <input type="text" id="search-input" class="pixel-input" placeholder="Search by name, skill, tag…" />
+      </div>
+      <div style="min-width:200px;">
+        <label class="text-sm text-dim" style="display:block;margin-bottom:6px;">FILTER BY SKILL</label>
+        <select id="skill-filter" class="pixel-input" multiple size="1">
+          <option value="">All Skills</option>
+          <option value="CODE_GENERATION">Code Generation</option>
+          <option value="CODE_REVIEW">Code Review</option>
+          <option value="DEBUGGING">Debugging</option>
+          <option value="TESTING">Testing</option>
+          <option value="DOCUMENTATION">Documentation</option>
+          <option value="RESEARCH">Research</option>
+          <option value="DATA_ANALYSIS">Data Analysis</option>
+          <option value="DEVOPS">DevOps</option>
+          <option value="FRONTEND">Frontend</option>
+          <option value="BACKEND">Backend</option>
+          <option value="SECURITY">Security</option>
+          <option value="WRITING">Writing</option>
+        </select>
+      </div>
+      <div>
+        <button class="pixel-btn pixel-btn--ghost" id="show-featured-btn">★ Featured Only</button>
+      </div>
+    </div>
+
+    <!-- Agent Grid -->
+    <div class="agent-grid" id="agent-grid">
+      <div class="text-dim text-sm" style="padding:24px;">Loading agents…</div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       TAB 2: LIVE TRACKER
+       ========================================================= -->
+  <div class="tab-panel" id="tab-tracker">
+    <div class="flex gap-16" style="align-items:flex-start;flex-wrap:wrap;">
+      <!-- Task Cards -->
+      <div style="flex:1;min-width:320px;">
+        <div class="flex justify-between items-center mb-12">
+          <h2 class="text-sm text-green">RUNNING TASKS</h2>
+          <button class="pixel-btn pixel-btn--green text-xs" id="new-task-btn" style="font-size:0.55rem;padding:6px 10px;">+ NEW TASK</button>
+        </div>
+        <div id="task-list">
+          <div class="text-dim text-sm" style="padding:24px;">Loading tasks…</div>
+        </div>
+      </div>
+
+      <!-- Live Event Feed -->
+      <div style="min-width:280px;max-width:360px;flex-shrink:0;">
+        <h2 class="text-sm text-green mb-12">LIVE EVENT FEED</h2>
+        <div class="event-feed" id="event-feed">
+          <div class="text-dim text-xs" style="padding:8px;">Waiting for events…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       TAB 3: CANVAS VIEW
+       ========================================================= -->
+  <div class="tab-panel" id="tab-canvas">
+    <div class="flex gap-16" style="align-items:flex-start;flex-wrap:wrap;">
+      <div class="flex-col gap-8" style="flex:1;min-width:400px;">
+        <div class="flex justify-between items-center">
+          <h2 class="text-sm text-green">AGENT CANVAS</h2>
+          <button class="pixel-btn pixel-btn--ghost" id="refresh-canvas-btn" style="font-size:0.55rem;padding:6px 10px;">⟳ REFRESH</button>
+        </div>
+        <div class="canvas-container">
+          <canvas id="pixel-canvas" width="800" height="500"></canvas>
+        </div>
+        <div class="flex gap-16 text-xs text-dim">
+          <span>Click an agent to inspect</span>
+          <span>■ IDLE &nbsp; ■ WORKING &nbsp; ■ COMPLETE</span>
+        </div>
+      </div>
+
+      <!-- Agent Detail Panel -->
+      <div style="min-width:240px;max-width:300px;">
+        <h2 class="text-sm text-green mb-12">AGENT DETAILS</h2>
+        <div id="canvas-detail-panel" class="pixel-card">
+          <div class="text-dim text-xs" style="text-align:center;padding:20px;">
+            Click an agent on the canvas to view details
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       TAB 4: AUTO-HIRE
+       ========================================================= -->
+  <div class="tab-panel" id="tab-autohire">
+    <div class="flex gap-24" style="align-items:flex-start;flex-wrap:wrap;">
+      <!-- Form -->
+      <div style="flex:1;min-width:320px;max-width:500px;">
+        <h2 class="text-sm text-green mb-16">FIND THE BEST AGENT FOR YOUR TASK</h2>
+
+        <div class="flex-col gap-12">
+          <div>
+            <label class="text-sm text-dim" style="display:block;margin-bottom:6px;">TASK DESCRIPTION</label>
+            <textarea id="route-description" class="pixel-input" rows="4"
+              placeholder="Describe what you need the agent to do…"></textarea>
+          </div>
+
+          <div>
+            <label class="text-sm text-dim" style="display:block;margin-bottom:8px;">REQUIRED SKILLS</label>
+            <div id="skill-checkboxes" class="flex flex-wrap gap-8">
+              <!-- populated by JS -->
+            </div>
+          </div>
+
+          <div>
+            <label class="text-sm text-dim" style="display:block;margin-bottom:6px;">PREFERRED TAGS (comma-separated)</label>
+            <input type="text" id="route-tags" class="pixel-input" placeholder="e.g. react, security, api…" />
+          </div>
+
+          <button class="pixel-btn pixel-btn--green w-full" id="find-agent-btn">
+            🤖 FIND BEST AGENT
+          </button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div style="flex:1;min-width:300px;">
+        <h2 class="text-sm text-green mb-16">MATCH RESULTS</h2>
+        <div id="route-results">
+          <div class="pixel-card" style="text-align:center;padding:32px;">
+            <div style="font-size:2rem;margin-bottom:12px;">🤖</div>
+            <div class="text-dim text-xs">Fill in the form and click "Find Best Agent"</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ===== NEW TASK MODAL ===== -->
+<div id="new-task-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center;">
+  <div class="pixel-card pixel-border" style="width:460px;max-width:95vw;padding:24px;">
+    <h2 class="text-sm text-green mb-16">CREATE NEW TASK</h2>
+    <div class="flex-col gap-12">
+      <div>
+        <label class="text-sm text-dim" style="display:block;margin-bottom:6px;">TASK TITLE</label>
+        <input type="text" id="new-task-title" class="pixel-input" placeholder="e.g. Build REST API…" />
+      </div>
+      <div>
+        <label class="text-sm text-dim" style="display:block;margin-bottom:6px;">DESCRIPTION</label>
+        <textarea id="new-task-desc" class="pixel-input" rows="3" placeholder="Describe the task…"></textarea>
+      </div>
+      <div>
+        <label class="text-sm text-dim" style="display:block;margin-bottom:8px;">REQUIRED SKILLS</label>
+        <div id="modal-skill-checkboxes" class="flex flex-wrap gap-8"></div>
+      </div>
+      <div class="flex gap-8">
+        <button class="pixel-btn pixel-btn--green flex-1" id="create-task-btn">CREATE &amp; AUTO-HIRE</button>
+        <button class="pixel-btn pixel-btn--ghost" id="cancel-task-btn">CANCEL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/pixel-canvas.js"></script>
+<script src="/static/js/marketplace.js"></script>
+<script src="/static/js/tracker.js"></script>
+<script src="/static/js/app.js"></script>
+</body>
+</html>
